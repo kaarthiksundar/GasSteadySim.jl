@@ -1,4 +1,4 @@
-function si_to_english!(data::Dict{String,Any},
+function _si_to_english!(data::Dict{String,Any},
     params::Dict{Symbol,Any}, nominal_values::Dict{Symbol,Any})
 
     rescale_mass_flow = x -> x / get_mmscfd_to_kgps_conversion_factor(params)

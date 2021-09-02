@@ -1,4 +1,4 @@
-function parse_data(data_folder::AbstractString; 
+function _parse_data(data_folder::AbstractString; 
     case_name::AbstractString="", 
     case_types::Vector{Symbol}=Symbol[], 
     initial_guess_filename::AbstractString="")
@@ -17,9 +17,9 @@ function parse_data(data_folder::AbstractString;
     else 
         bc_file = bc_file * ".json"
     end 
-    network_data = parse_json(network_file)
-    params_data = parse_json(params_file)
-    bc_data = parse_json(bc_file)
+    network_data = _parse_json(network_file)
+    params_data = _parse_json(params_file)
+    bc_data = _parse_json(bc_file)
 
     if isfile(ig_file)
         ig_data = parse_json(ig_file)
@@ -35,7 +35,7 @@ function parse_data(data_folder::AbstractString;
     return data
 end 
 
-function get_nominal_pressure(data::Dict{String,Any}, units)
+function _get_nominal_pressure(data::Dict{String,Any}, units)
     slack_pressures = []
     for (_, value) in get(data, "boundary_pslack", [])
         push!(slack_pressures, value)
@@ -122,7 +122,7 @@ function process_data!(data::Dict{String,Any})
     nominal_values[:velocity] = 4 # choose based on mass flows
     nominal_values[:length] = 5000.0
     nominal_values[:area] = 1.0
-    nominal_values[:pressure] = get_nominal_pressure(data, params[:units]) 
+    nominal_values[:pressure] = _get_nominal_pressure(data, params[:units]) 
     nominal_values[:density] = nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
     nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:velocity]
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]

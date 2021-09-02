@@ -1,5 +1,5 @@
 
-function build_ig(data::Dict{String,Any})::Dict{Symbol,Any}
+function _build_ig(data::Dict{String,Any})::Dict{Symbol,Any}
     ig = Dict{Symbol,Any}()
 
     ig[:node] = Dict() 

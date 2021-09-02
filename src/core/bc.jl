@@ -1,4 +1,4 @@
-function build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
+function _build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
     bc = Dict{Symbol,Any}()
 
     bc[:node] = Dict() 
@@ -7,7 +7,7 @@ function build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
     if !haskey(data, "boundary_pslack") 
         @error "Simulator requires at least one slack node pressure for uniqueness of solutions"
     end 
-    
+
     for (i, value) in get(data, "boundary_pslack", [])
         id = parse(Int64, i)
         bc[:node][id] = Dict( 

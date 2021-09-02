@@ -1,4 +1,4 @@
-function pu_to_si!(data::Dict{String,Any},
+function _pu_to_si!(data::Dict{String,Any},
     params::Dict{Symbol,Any}, nominal_values::Dict{Symbol,Any})
 
     rescale_mass_flow = x -> x * nominal_values[:mass_flow]
@@ -23,7 +23,7 @@ function pu_to_si!(data::Dict{String,Any},
     _rescale_data!(data, params, rescale_functions)
 end 
 
-function english_to_si!(data::Dict{String,Any},
+function _english_to_si!(data::Dict{String,Any},
     params::Dict{Symbol,Any}, nominal_values::Dict{Symbol,Any})
 
     rescale_mass_flow = x -> x * get_mmscfd_to_kgps_conversion_factor(params)

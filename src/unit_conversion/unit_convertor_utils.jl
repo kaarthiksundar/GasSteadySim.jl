@@ -36,7 +36,7 @@ end
 
 get_kgps_to_mmscfd_conversion_factor(params::Dict{Symbol,Any})::Number = 1 / get_mmscfd_to_kgps_conversion_factor(params)
 
-function get_data_units(rescale_functions)::Dict{Symbol,Any}
+function _get_data_units(rescale_functions)::Dict{Symbol,Any}
 
     units = Dict{Symbol,Any}()
     rescale_mass_flow = rescale_functions[1]
@@ -101,7 +101,7 @@ end
 function _rescale_data!(data::Dict{String,Any}, 
     params::Dict{Symbol,Any}, rescale_functions::Vector{Function})
 
-    units = get_data_units(rescale_functions)
+    units = _get_data_units(rescale_functions)
     node_units = units[:node_units]
     pipe_units = units[:pipe_units]
     compressor_units = units[:compressor_units] 

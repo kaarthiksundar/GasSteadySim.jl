@@ -1,4 +1,4 @@
-function get_eos(eos::Symbol)
+function _get_eos(eos::Symbol)
     (eos == :ideal) &&
         (return _ideal_coeffs, _pressure_to_density_ideal, _density_to_pressure_ideal)
     (eos == :simple_cnga) &&

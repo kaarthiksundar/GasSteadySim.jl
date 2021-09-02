@@ -1,4 +1,4 @@
-function si_to_pu!(data::Dict{String,Any},
+function _si_to_pu!(data::Dict{String,Any},
     params::Dict{Symbol,Any}, nominal_values::Dict{Symbol,Any})
 
     rescale_mass_flow = x -> x/nominal_values[:mass_flow]

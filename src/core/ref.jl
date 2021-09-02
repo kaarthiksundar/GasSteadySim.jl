@@ -1,4 +1,4 @@
-function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
 
     for (i, node) in get(data, "nodes", [])
         name = :node
@@ -46,7 +46,7 @@ function add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
     return
 end
 
-function add_index_info!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
+function _add_index_info!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
     dofid = 1
     ref[:dof] = Dict{Int64, Any}()
     
@@ -69,7 +69,7 @@ function add_index_info!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
     end
 end
 
-function add_incident_dofs_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+function _add_incident_dofs_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
     ref[:incoming_dofs] = Dict{Int64, Vector{Int64}}()
     ref[:outgoing_dofs] = Dict{Int64, Vector{Int64}}()
 
@@ -91,7 +91,7 @@ function add_incident_dofs_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{Stri
     return
 end
 
-function add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+function _add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
     ref[:incoming_pipes] = Dict{Int64, Vector{Int64}}()
     ref[:outgoing_pipes] = Dict{Int64, Vector{Int64}}()
 
@@ -107,7 +107,7 @@ function add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
     return
 end
 
-function add_compressor_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+function _add_compressor_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
     ref[:incoming_compressors] = Dict{Int64, Vector{Int64}}()
     ref[:outgoing_compressors] = Dict{Int64, Vector{Int64}}()
     
@@ -128,7 +128,7 @@ function build_ref(data::Dict{String,Any};
     ref_extensions=[])::Dict{Symbol,Any}
 
     ref = Dict{Symbol,Any}()
-    add_components_to_ref!(ref, data)
+    _add_components_to_ref!(ref, data)
 
     for extension in ref_extensions
         extension(ref, data)
