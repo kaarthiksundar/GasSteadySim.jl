@@ -70,7 +70,6 @@ function add_index_info!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
 end
 
 function add_incident_dofs_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
-
     ref[:incoming_dofs] = Dict{Int64, Vector{Int64}}()
     ref[:outgoing_dofs] = Dict{Int64, Vector{Int64}}()
 
@@ -89,6 +88,38 @@ function add_incident_dofs_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{Stri
         push!(ref[:outgoing_dofs][compressor["fr_node"]], compressor[:dof])
     end
 
+    return
+end
+
+function add_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+    ref[:incoming_pipes] = Dict{Int64, Vector{Int64}}()
+    ref[:outgoing_pipes] = Dict{Int64, Vector{Int64}}()
+
+    for (i, _) in ref[:node]
+        ref[:incoming_pipes][i] = []
+        ref[:outgoing_pipes][i] = []
+    end
+
+    for (id, pipe) in ref[:pipe]
+        push!(ref[:incoming_pipes][pipe["to_node"]], id)
+        push!(ref[:outgoing_pipes][pipe["fr_node"]], id)
+    end
+    return
+end
+
+function add_compressor_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+    ref[:incoming_compressors] = Dict{Int64, Vector{Int64}}()
+    ref[:outgoing_compressors] = Dict{Int64, Vector{Int64}}()
+    
+    for (i, _) in ref[:node]
+        ref[:incoming_compressors][i] = []
+        ref[:outgoing_compressors][i] = []
+    end
+
+    for (id, compressor) in get(ref, :compressor, [])
+        push!(ref[:incoming_compressors][compressor["to_node"]], id)
+        push!(ref[:outgoing_compressors][compressor["fr_node"]], id)
+    end
     return
 end
 
