@@ -1,7 +1,5 @@
 module GasSteadySim
 
-# module GasSteadySim
-
 import JSON
 using NLsolve
 using SparseArrays
@@ -27,7 +25,7 @@ include("core/sol.jl")
 include("core/initialize_ts.jl")
 # include("core/assemble.jl")
 # include("core/run_ts.jl")
-# include("core/output.jl")
+include("core/output.jl")
 include("io/writer.jl")
 include("core/export.jl")
 

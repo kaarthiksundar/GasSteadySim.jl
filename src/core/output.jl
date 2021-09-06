@@ -1,6 +1,16 @@
+function calculate_slack_withdrawal(ss::SteadySimulator, id::Int, x_dof::Array)::Float64
+    slack_withdrawal = 0.0
+    for i in ref(ss, :incoming_dofs)[id]
+        slack_withdrawal += x_dof[i]
+    end 
+    for i in ref(ss, :outgoing_dofs)[id]
+        slack_withdrawal -= x_dof[i]
+    end 
+    return slack_withdrawal
+end 
+
 
 function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
-
     flow_direction = true
     compressor_flow_direction = true
     for i = 1: length(x_dof)
@@ -11,7 +21,9 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
             ctrl_type, val = control(ss, :node, local_id)
             if ctrl_type == flow_control
                 ref(ss, sym, local_id)["withdrawal"] = val
-            end
+            elseif ctrl_type == pressure_control 
+                ref(ss, sym, local_id)["withdrawal"] = calculate_slack_withdrawal(ss, local_id, x_dof)
+            end 
         end
 
         if sym == :pipe
