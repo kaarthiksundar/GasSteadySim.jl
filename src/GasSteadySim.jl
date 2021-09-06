@@ -28,7 +28,7 @@ include("core/initialize_ts.jl")
 # include("core/assemble.jl")
 # include("core/run_ts.jl")
 # include("core/output.jl")
-# include("io/writer.jl")
+include("io/writer.jl")
 include("core/export.jl")
 
 end # module
