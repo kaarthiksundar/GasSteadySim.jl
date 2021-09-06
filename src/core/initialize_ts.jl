@@ -15,25 +15,25 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
     params, nominal_values = process_data!(data)
     make_per_unit!(data, params, nominal_values)
     ref = build_ref(data, ref_extensions= [
-        add_pipe_info_at_nodes!,
-        add_compressor_info_at_nodes!,
-        add_index_info!,
-        add_incident_edge_dofs_info_at_nodes!
+        _add_pipe_info_at_nodes!,
+        _add_compressor_info_at_nodes!,
+        _add_index_info!,
+        _add_incident_dofs_info_at_nodes!
         ]
     )
 
-    bc = build_bc(data)
+    bc = _build_bc(data)
     feasibility_model = JuMP.Model() # get_feasibility_model(ref, bc, eos)
 
     ss = SteadySimulator(data,
         ref,
-        initialize_solution(data),
+        _initialize_solution(data),
         nominal_values,
         params,
-        build_ig(data),
+        _build_ig(data),
         bc, 
         feasibility_model,
-        get_eos(eos)...
+        _get_eos(eos)...
     )
     return ss
 end

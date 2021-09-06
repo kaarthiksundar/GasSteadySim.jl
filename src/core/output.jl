@@ -47,7 +47,7 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
 end
 
 
-function populate_solution!(ss::Transienssimulator)
+function populate_solution!(ss::SteadySimulator)
     sol = ss.sol
     units = params(ss, :units)
 
