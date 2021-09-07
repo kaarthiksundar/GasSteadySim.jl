@@ -75,12 +75,12 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::Array, residual_dof::
         f = x_dof[eqn_no]
         fr_node = pipe["fr_node"]  
         to_node = pipe["to_node"]
-        M = ss.nominal_values[:velocity]/ss.nominal_values[:sound_speed]
+        c = ss.nominal_values[:mass_flow]^2  / (ss.nominal_values[:pressure] * ss.nominal_values[:density])
 
         b1, b2 = get_eos_coeffs(ss)
         pressure_sqr_diff = x_dof[ref(ss, :node, fr_node, :dof)]^2 - x_dof[ref(ss, :node, to_node, :dof)]^2
         pressure_cube_diff = x_dof[ref(ss, :node, fr_node,:dof)]^3 - x_dof[ref(ss, :node, to_node,:dof)]^3
-        resistance = pipe["friction_factor"] * pipe["length"] * (M^2) / (2 * pipe["diameter"] * pipe["area"]^2)
+        resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
         residual_dof[eqn_no] = (b1/2) * pressure_sqr_diff + (b2/3) * pressure_cube_diff - f * abs(f) * resistance
     end
 end
@@ -141,10 +141,10 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::Array, J::Array)
         eqn_fr = ref(ss, :node, fr_node, :dof)
         p_fr = x_dof[eqn_fr]
         p_to = x_dof[eqn_to]
-        M = ss.nominal_values[:velocity]/ss.nominal_values[:sound_speed]
+        c = ss.nominal_values[:mass_flow]^2  / (ss.nominal_values[:pressure] * ss.nominal_values[:density])
 
         b1, b2 = get_eos_coeffs(ss)
-        resistance = pipe["friction_factor"] * pipe["length"] * (M^2) / (2 * pipe["diameter"] * pipe["area"]^2)
+        resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
         var1 = b1 * p_fr + b2 * p_fr^2
         var2 = -b1 * p_to - b2 * p_to^2
         var3 =  -2.0 * f * sign(f) * resistance
@@ -216,10 +216,10 @@ function _eval_pipe_equations_sparse_mat!(ss::SteadySimulator, x_dof::Array, i_v
         f = x_dof[eqn_no]
         p_fr = x_dof[eqn_fr]
         p_to = x_dof[eqn_to]
-        M = ss.nominal_values[:velocity]/ss.nominal_values[:sound_speed]
+        c = ss.nominal_values[:mass_flow]^2  / (ss.nominal_values[:pressure] * ss.nominal_values[:density])
 
         b1, b2 = get_eos_coeffs(ss)
-        resistance = pipe["friction_factor"] * pipe["length"] * (M^2) / (2 * pipe["diameter"] * pipe["area"]^2)
+        resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
         var1 = b1 * p_fr + b2 * p_fr^2
         var2 = -b1 * p_to - b2 * p_to^2
         var3 =  - 2 * f * sign(f) * resistance
