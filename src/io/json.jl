@@ -6,7 +6,6 @@ function _parse_json(file_string::AbstractString)
     return data
 end
 
-
 ""
 function _parse_json(io::IO)
     data = JSON.parse(io, dicttype=Dict)

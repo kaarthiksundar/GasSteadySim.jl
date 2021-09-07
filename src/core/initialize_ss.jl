@@ -22,17 +22,14 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         ]
     )
 
-    bc = _build_bc(data)
-    feasibility_model = JuMP.Model() # get_feasibility_model(ref, bc, eos)
-
     ss = SteadySimulator(data,
         ref,
         _initialize_solution(data),
         nominal_values,
         params,
         _build_ig(data),
-        bc, 
-        feasibility_model,
+        _build_bc(data), 
+        JuMP.Model(),
         _get_eos(eos)...
     )
     return ss

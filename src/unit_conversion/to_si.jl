@@ -10,10 +10,8 @@ function _pu_to_si!(data::Dict{String,Any},
     rescale_area = x -> x * nominal_values[:area]
 
     function rescale_compressor_boundary_conditions!(type, value)
-        
         (type == 1) && (value = rescale_pressure(value))
         (type == 2) && (value = rescale_mass_flow(value))
-        
     end 
 
     rescale_functions = [rescale_mass_flow, rescale_mass_flux, 
@@ -35,10 +33,8 @@ function _english_to_si!(data::Dict{String,Any},
     rescale_area = x -> sq_inches_to_sq_m(x)
 
     function rescale_compressor_boundary_conditions!(type, value)
-        
         (type == 1) && (value = rescale_pressure(value))
         (type == 2) && (value = rescale_mass_flow(value))
-        
     end 
 
     rescale_functions = [rescale_mass_flow, rescale_mass_flux, 

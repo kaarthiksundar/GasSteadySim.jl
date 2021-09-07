@@ -28,7 +28,7 @@ function _parse_data(data_folder::AbstractString;
         filter!(p -> p.first in required_ig_fields, ig_data)
         data = merge(network_data, params_data, bc_data, ig_data)
     else
-        @info "initial guess file not provided, the code will generate an initial guess"
+        @debug "initial guess file not provided, the code will generate an initial guess"
         data = merge(network_data, params_data, bc_data)
     end
     
@@ -53,9 +53,12 @@ function process_data!(data::Dict{String,Any})
     params_exhaustive = ["temperature", 
         "gas_specific_gravity",
         "specific_heat_capacity_ratio", 
+        "nominal_length", 
+        "nominal_velocity", 
+        "nominal_pressure",
         "units"]
 
-    defaults_exhaustive = [288.706, 0.6, 1.4, 0]
+    defaults_exhaustive = [288.706, 0.6, 1.4, 5000.0, 4.0, 3500000.0, 0]
 
     simulation_params = data["simulation_params"]
     
@@ -65,6 +68,9 @@ function process_data!(data::Dict{String,Any})
         occursin("Gas", k) && (key_map["gas_specific_gravity"] = k)
         occursin("Specific heat", k) &&
             (key_map["specific_heat_capacity_ratio"] = k)
+        occursin("length", k) && (key_map["nominal_length"] = k)
+        occursin("velocity", k) && (key_map["nominal_velocity"] = k)
+        occursin("pressure", k) && (key_map["nominal_pressure"] = k)
         occursin("units", k) && (key_map["units"] = k)
     end
 
@@ -119,10 +125,15 @@ function process_data!(data::Dict{String,Any})
     # sound speed (m/s): v = sqrt(R_g * T); 
     # R_g = R/M_g = R/M_a/G; R_g is specific gas constant; g-gas, a-air
     nominal_values[:sound_speed] = sqrt(params[:R] * params[:temperature] / params[:gas_molar_mass])
-    nominal_values[:velocity] = 4 # choose based on mass flows
-    nominal_values[:length] = 5000.0
+    nominal_values[:velocity] = params[:nominal_velocity] # choose based on mass flows
+    nominal_values[:length] = params[:nominal_length]
     nominal_values[:area] = 1.0
-    nominal_values[:pressure] = _get_nominal_pressure(data, params[:units]) 
+    nominal_values[:pressure] = 
+    if params[:nominal_pressure] != 1.0 
+        _get_nominal_pressure(data, params[:units]) 
+    else 
+        1.0
+    end
     nominal_values[:density] = nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
     nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:velocity]
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]

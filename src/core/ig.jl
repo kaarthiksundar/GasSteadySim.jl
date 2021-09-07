@@ -21,9 +21,5 @@ function _build_ig(data::Dict{String,Any})::Dict{Symbol,Any}
         ig[:compressor][id] = value
     end 
 
-    (isempty(ig[:node])) && (@info "initial guess for nodal pressure not provided") 
-    (isempty(ig[:pipe])) && (@info "initial guess for pipe flow not provided")
-    (isempty(ig[:compressor])) && (@info "initial guess for compressor flow not provided")
-
     return ig
 end 

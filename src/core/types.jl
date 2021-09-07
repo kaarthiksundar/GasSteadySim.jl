@@ -67,7 +67,6 @@ function get_compressor_control(ss::SteadySimulator,
     return CONTROL_TYPE(control_type), val
 end
 
-
 @enum CONTROL_TYPE begin
     c_ratio_control = 0
     discharge_pressure_control = 1
@@ -75,3 +74,19 @@ end
     pressure_control = 10
     unknown_control = 100
 end
+
+@enum SOLVER_STATUS begin 
+    successfull = 0 
+    initial_nl_solve_failure = 1 
+    pressure_correction_nl_solve_failure = 2
+    pressure_correction_failure = 3 
+    compressor_flow_negative = 4
+end
+
+struct SolverReturn 
+    status::SOLVER_STATUS
+    iterations::Int 
+    residual_norm::Float64 
+    time::Float64 
+    solution::Vector{Float64}
+end 
