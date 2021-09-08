@@ -12,7 +12,7 @@ end
 
 function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
     flow_direction = true
-    compressor_flow_direction = true
+    negative_flow_in_compressors = Int[]
     for i = 1: length(x_dof)
         sym, local_id = ref(ss, :dof, i)
         if sym == :node
@@ -33,7 +33,9 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
 
         if sym == :compressor
             ref(ss, sym, local_id)["flow"] = x_dof[i]
-            (x_dof[i] < 0) && (compressor_flow_direction = false)
+            if x_dof[i] < 0
+                push!(negative_flow_in_compressors, local_id)
+            end
             ctrl_type, val = control(ss, :compressor, local_id)
             ref(ss, sym, local_id)["control_type"] = ctrl_type
             to_node = ref(ss, sym, local_id)["to_node"]
@@ -43,7 +45,7 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
         end
     end
 
-    return flow_direction, compressor_flow_direction
+    return flow_direction, negative_flow_in_compressors
 end
 
 

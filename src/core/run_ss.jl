@@ -29,7 +29,7 @@ function run_simulator!(ss::SteadySimulator;
             soln.iterations, 
             soln.residual_norm, 
             t_first + t_second, 
-            soln.zero)
+            soln.zero, Int[])
     end
 
     if all_pressures_non_neg == true
@@ -54,7 +54,7 @@ function run_simulator!(ss::SteadySimulator;
                 iters_initial + soln.iterations, 
                 soln.residual_norm, 
                 t_first + t_second, 
-                soln.zero)
+                soln.zero, Int[])
         end
 
         if all_pressures_non_neg == false
@@ -65,14 +65,14 @@ function run_simulator!(ss::SteadySimulator;
                 iters_initial + soln.iterations, 
                 soln.residual_norm, 
                 t_first + t_second, 
-                soln.zero)
+                soln.zero, Int[])
         else 
             @info "pressure correction successful"
         end
     end
 
 
-    flow_direction, compressor_direction = update_solution_fields_in_ref!(ss, soln.zero)
+    flow_direction, negative_flow_in_compressors = update_solution_fields_in_ref!(ss, soln.zero)
 
     populate_solution!(ss)
 
@@ -80,20 +80,20 @@ function run_simulator!(ss::SteadySimulator;
         @info "calculated flow direction is opposite to assumed direction in some pipe(s)"
     end
 
-    if compressor_direction == false
+    if length(negative_flow_in_compressors) > 0
         @warn "calculated flow direction is opposite to given direction in some compressor(s)"
         return SolverReturn(compressor_flow_negative, 
             iters_initial + soln.iterations, 
             soln.residual_norm, 
             t_first + t_second, 
-            soln.zero)
+            soln.zero, negative_flow_in_compressors)
     end
 
     return SolverReturn(successfull, 
         iters_initial + soln.iterations, 
         soln.residual_norm, 
         t_first + t_second, 
-        soln.zero)
+        soln.zero, Int[])
 end
 
 function _invoke_solver(r, J, df, x_0, method, iter)

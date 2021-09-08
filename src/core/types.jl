@@ -89,4 +89,5 @@ struct SolverReturn
     residual_norm::Float64 
     time::Float64 
     solution::Vector{Float64}
+    negative_flow_in_compressors::Vector{Int64}
 end 
