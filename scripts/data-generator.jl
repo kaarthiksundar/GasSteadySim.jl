@@ -13,7 +13,6 @@ get_simulation_params(; T::Float64 = 288.70599999999996) =
 
 function generate_steady_sim_inputs_from_gaslib(file::AbstractString, output_folder::AbstractString)
 
-    # data = parse_file("benchmarks/GasLib-40.zip")
     data = parse_file("GasLib-benchmarks/" * file)
 
     (!isdir(output_folder)) && (mkdir(output_folder)) 

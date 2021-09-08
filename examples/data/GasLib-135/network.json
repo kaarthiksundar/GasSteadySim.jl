@@ -2220,9 +2220,9 @@
   "compressors": {
     "24": {
       "comp_id": 24,
-      "to_node": 23,
+      "to_node": 88,
       "comp_name": "c24",
-      "from_node": 88
+      "from_node": 23
     },
     "4": {
       "comp_id": 4,
@@ -2256,9 +2256,9 @@
     },
     "2": {
       "comp_id": 2,
-      "to_node": 28,
+      "to_node": 135,
       "comp_name": "c2",
-      "from_node": 135
+      "from_node": 28
     },
     "6": {
       "comp_id": 6,
@@ -2274,9 +2274,9 @@
     },
     "23": {
       "comp_id": 23,
-      "to_node": 12,
+      "to_node": 88,
       "comp_name": "c23",
-      "from_node": 88
+      "from_node": 12
     },
     "22": {
       "comp_id": 22,
@@ -2334,9 +2334,9 @@
     },
     "21": {
       "comp_id": 21,
-      "to_node": 17,
+      "to_node": 93,
       "comp_name": "c21",
-      "from_node": 93
+      "from_node": 17
     },
     "7": {
       "comp_id": 7,
@@ -2388,9 +2388,9 @@
     },
     "3": {
       "comp_id": 3,
-      "to_node": 29,
+      "to_node": 135,
       "comp_name": "c3",
-      "from_node": 135
+      "from_node": 29
     }
   }
 }

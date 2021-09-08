@@ -56,9 +56,10 @@ function process_data!(data::Dict{String,Any})
         "nominal_length", 
         "nominal_velocity", 
         "nominal_pressure",
+        "nominal_density",
         "units"]
 
-    defaults_exhaustive = [288.706, 0.6, 1.4, 5000.0, 4.0, 3500000.0, 0]
+    defaults_exhaustive = [288.706, 0.6, 1.4, 5000.0, 4.0, 3500000.0, NaN, 0]
 
     simulation_params = data["simulation_params"]
     
@@ -71,6 +72,7 @@ function process_data!(data::Dict{String,Any})
         occursin("length", k) && (key_map["nominal_length"] = k)
         occursin("velocity", k) && (key_map["nominal_velocity"] = k)
         occursin("pressure", k) && (key_map["nominal_pressure"] = k)
+        occursin("density", k) && (key_map["nominal_density"] = k)
         occursin("units", k) && (key_map["units"] = k)
     end
 
@@ -134,7 +136,12 @@ function process_data!(data::Dict{String,Any})
     else 
         1.0
     end
-    nominal_values[:density] = nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
+    nominal_values[:density] = 
+        if isnan(params[:nominal_density]) 
+            nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
+        else 
+            params[:nominal_density]
+        end 
     nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:velocity]
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
     
