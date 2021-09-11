@@ -41,7 +41,7 @@ function _get_nominal_pressure(data::Dict{String,Any}, units)
         push!(slack_pressures, value)
     end 
 
-    (length(slack_pressures) == 0) && (return 3500000.0) 
+    @assert length(slack_pressures) != 0
     (units == 1) && (return minimum(slack_pressures) *  6894.75729)
     return minimum(slack_pressures)
 end 
@@ -59,7 +59,7 @@ function process_data!(data::Dict{String,Any})
         "nominal_density",
         "units"]
 
-    defaults_exhaustive = [288.706, 0.6, 1.4, 5000.0, 4.0, 3500000.0, NaN, 0]
+    defaults_exhaustive = [288.706, 0.6, 1.4, 5000.0, NaN, NaN, NaN, 0]
 
     simulation_params = data["simulation_params"]
     
@@ -131,17 +131,23 @@ function process_data!(data::Dict{String,Any})
     nominal_values[:length] = params[:nominal_length]
     nominal_values[:area] = 1.0
     nominal_values[:pressure] = 
-    if params[:nominal_pressure] != 1.0 
+    if isnan(params[:nominal_pressure]) 
         _get_nominal_pressure(data, params[:units]) 
     else 
-        1.0
+        params[:nominal_pressure]
     end
     nominal_values[:density] = 
-        if isnan(params[:nominal_density]) 
-            nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
-        else 
-            params[:nominal_density]
-        end 
+    if isnan(params[:nominal_density]) 
+        nominal_values[:pressure] / (nominal_values[:sound_speed]^2)
+    else 
+        params[:nominal_density]
+    end 
+    nominal_values[:velocity] =
+    if isnan(params[:nominal_velocity])
+       ceil(nominal_values[:sound_speed]/100)
+    else
+        params[:nominal_velocity]
+    end
     nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:velocity]
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
     
