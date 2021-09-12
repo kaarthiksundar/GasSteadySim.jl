@@ -1,23 +1,23 @@
 
 
 
-"""function assembles the residuals for in place computation"""
-function assemble_residual_in_place(ss::SteadySimulator, x_dof::Array, residual_dof::Array)
+"""function assembles the residuals  in place"""
+function assemble_residual_in_place(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     _eval_junction_equations!(ss, x_dof, residual_dof)
     _eval_pipe_equations!(ss, x_dof, residual_dof)
     _eval_compressor_equations!(ss, x_dof, residual_dof)
 end
 
-"""function assembles the Jacobians for in place computation"""
-function assemble_mat_in_place(ss::SteadySimulator, x_dof::Array, J::Array)
-    fill!(J, 0)
+"""function assembles the Jacobian in place"""
+function assemble_mat_in_place(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArray)
+    fill!(J, 0) # required if J dense but no harm if sparse
     _eval_junction_equations_mat!(ss, x_dof, J)
     _eval_pipe_equations_mat!(ss, x_dof, J)
     _eval_compressor_equations_mat!(ss, x_dof, J)
 end
 
-"""function assembles the residuals for sparse computation"""
-function assemble_residual(ss::SteadySimulator, x_dof::Array)
+"""function assembles the residuals and returns array"""
+function assemble_residual(ss::SteadySimulator, x_dof::AbstractArray)
 
     num_dofs = length(ref(ss, :dof))
     residual_dof = zeros(Float64, num_dofs)
@@ -27,8 +27,8 @@ function assemble_residual(ss::SteadySimulator, x_dof::Array)
     return residual_dof
 end
 
-"""function assembles the Jacobians for sparse computation"""
-function assemble_mat(ss::SteadySimulator, x_dof::Array)
+"""function assembles the Jacobians and returns sparse matrix"""
+function assemble_sparse_mat(ss::SteadySimulator, x_dof::AbstractArray)
     num_dofs = length(ref(ss, :dof))
     n =  length(ref(ss, :node)) + 3*length(ref(ss, :pipe)) + 3*length(ref(ss, :compressor))
     i_vec, j_vec, k_vec =  Vector{Int32}(), Vector{Int32}(), Vector{Float64}()
@@ -44,7 +44,7 @@ function assemble_mat(ss::SteadySimulator, x_dof::Array)
 end
 
 """residual computation for junctions"""
-function _eval_junction_equations!(ss::SteadySimulator, x_dof::Array, residual_dof::Array)
+function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     for (node_id, junction) in ref(ss, :node)
         eqn_no = junction[:dof]
         ctrl_type, val = control(ss, :node, node_id) # val is withdrawal or pressure
@@ -69,7 +69,7 @@ function _eval_junction_equations!(ss::SteadySimulator, x_dof::Array, residual_d
 end
 
 """residual computation for pipes"""
-function _eval_pipe_equations!(ss::SteadySimulator, x_dof::Array, residual_dof::Array)
+function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     for (_, pipe) in ref(ss, :pipe)
         eqn_no = pipe[:dof] 
         f = x_dof[eqn_no]
@@ -86,7 +86,7 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::Array, residual_dof::
 end
 
 """residual computation for compressor"""
-function _eval_compressor_equations!(ss::SteadySimulator, x_dof::Array, residual_dof::Array)
+function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     for (comp_id, comp) in ref(ss, :compressor)
         eqn_no = comp[:dof] 
         ctr, cmpr_val = control(ss, :compressor, comp_id)
@@ -106,7 +106,7 @@ end
 
 
 """in place Jacobian computation for junctions"""
-function _eval_junction_equations_mat!(ss::SteadySimulator, x_dof::Array, J::Array)
+function _eval_junction_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArray)
     for (node_id, junction) in ref(ss, :node)
         eqn_no = junction[:dof]
         ctrl_type, _ = control(ss, :node, node_id) # val is withdrawal or pressure
@@ -131,7 +131,7 @@ end
 
 
 """in place Jacobian computation for pipes"""
-function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::Array, J::Array)
+function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArray)
     for (key, pipe) in ref(ss, :pipe)
         eqn_no = pipe[:dof] 
         f = x_dof[eqn_no]
@@ -156,7 +156,7 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::Array, J::Array)
 end
 
 """in place Jacobian computation for compressors"""
-function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::Array, J::Array)
+function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArray)
     for (comp_id, comp) in ref(ss, :compressor)
         eqn_no = comp[:dof] 
         ctr, cmpr_val = control(ss, :compressor, comp_id)
@@ -177,7 +177,7 @@ function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::Array, J::A
 end
 
 """sparse Jacobian computation for junctions"""
-function _eval_junction_equations_sparse_mat!(ss::SteadySimulator, x_dof::Array, i_vec::Array, j_vec::Array, k_vec::Array)
+function _eval_junction_equations_sparse_mat!(ss::SteadySimulator, x_dof::AbstractArray, i_vec::Vector{Int32}, j_vec::Vector{Int32}, k_vec::Vector{Float64})
     for (node_id, junction) in ref(ss, :node)
         eqn_no = junction[:dof]
         ctrl_type, _ = control(ss, :node, node_id) #val is withdrawal or pressure
@@ -206,7 +206,7 @@ function _eval_junction_equations_sparse_mat!(ss::SteadySimulator, x_dof::Array,
 end
 
 """sparse Jacobian computation for pipes"""   
-function _eval_pipe_equations_sparse_mat!(ss::SteadySimulator, x_dof::Array, i_vec::Array, j_vec::Array, k_vec::Array)
+function _eval_pipe_equations_sparse_mat!(ss::SteadySimulator, x_dof::AbstractArray, i_vec::Vector{Int32}, j_vec::Vector{Int32}, k_vec::Vector{Float64})
     for (key, pipe) in ref(ss, :pipe)
         eqn_no = pipe[:dof] 
         fr_node = pipe["fr_node"]  
@@ -239,7 +239,7 @@ function _eval_pipe_equations_sparse_mat!(ss::SteadySimulator, x_dof::Array, i_v
 end
 
 """sparse Jacobian computation for compressors""" 
-function _eval_compressor_equations_sparse_mat!(ss::SteadySimulator, x_dof::Array, i_vec::Array, j_vec::Array, k_vec::Array)
+function _eval_compressor_equations_sparse_mat!(ss::SteadySimulator, x_dof::AbstractArray, i_vec::Vector{Int32}, j_vec::Vector{Int32}, k_vec::Vector{Float64})
     
     for (comp_id, comp) in ref(ss, :compressor)
         eqn_no = comp[:dof] 
@@ -268,7 +268,5 @@ function _eval_compressor_equations_sparse_mat!(ss::SteadySimulator, x_dof::Arra
         end
     end
 end
-
-
 
 
