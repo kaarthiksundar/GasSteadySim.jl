@@ -6,6 +6,7 @@ using SparseArrays
 using LineSearches
 using JuMP
 using PolyhedralRelaxations
+using Clp
 
 include("io/json.jl")
 include("io/data_utils.jl")
@@ -22,6 +23,7 @@ include("core/ref.jl")
 include("core/ig.jl")
 include("core/bc.jl")
 include("core/sol.jl")
+include("core/feasibility.jl")
 include("core/initialize_ss.jl")
 include("core/assemble.jl")
 include("core/run_ss.jl")

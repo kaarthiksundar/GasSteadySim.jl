@@ -30,7 +30,10 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         _build_ig(data),
         _build_bc(data), 
         JuMP.Model(),
+        Dict(), Dict(),
         _get_eos(eos)...
     )
+
+    construct_feasibility_model!(ss)
     return ss
 end

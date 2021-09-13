@@ -55,7 +55,9 @@ function generate_steady_sim_inputs_from_gaslib(file::AbstractString, output_fol
             "node_id" => parse(Int, i),
             "node_name" => "n" * i,
             "x_coord" => node["lat"],
-            "y_coord" => node["lon"]
+            "y_coord" => node["lon"], 
+            "min_pressure" => node["p_min"] * data["base_pressure"], 
+            "max_pressure" => node["p_max"] * data["base_pressure"]
         )
         if i == string(slack_node)
             network_data["nodes"][i]["slack_bool"] = 1

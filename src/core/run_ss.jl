@@ -1,24 +1,25 @@
+function is_feasible!(ss::SteadySimulator; 
+    optimizer=optimizer_with_attributes(Clp.Optimizer, "LogLevel" => 0, "InfeasibleReturn" => 1))
+
+    set_optimizer(ss.feasibility_model, optimizer)
+    optimize!(ss.feasibility_model)
+
+end
+
 function run_simulator!(ss::SteadySimulator; 
-    jacobian_type::Symbol=:in_place, 
     method::Symbol=:trust_region,
     iteration_limit::Int64=2000)::SolverReturn
     
     x_guess = _create_initial_guess_dof!(ss)
+    n = length(x_guess)
     
-    if jacobian_type == :sparse
-        residual_fun = (x_dof) -> assemble_residual(ss, x_dof)
-        Jacobian_fun = (x_dof) -> assemble_mat(ss, x_dof)
-        J0 = Jacobian_fun(x_guess)
-        df = OnceDifferentiable(residual_fun, Jacobian_fun, x_guess, x_guess, J0)
-    end
 
-    if jacobian_type == :in_place
-        residual_fun = (r_dof, x_dof) -> assemble_residual_in_place(ss, x_dof, r_dof)
-        Jacobian_fun = (J_dof, x_dof) -> assemble_mat_in_place(ss, x_dof, J_dof)
-        df = nothing
-    end
+    residual_fun! = (r_dof, x_dof) -> assemble_residual!(ss, x_dof, r_dof)
+    Jacobian_fun! = (J_dof, x_dof) -> assemble_mat!(ss, x_dof, J_dof)
+    df = OnceDifferentiable(residual_fun!, Jacobian_fun!, rand(n), rand(n), spzeros(n, n))
 
-    t_first, soln = _invoke_solver(residual_fun, Jacobian_fun, df, x_guess, method, iteration_limit)
+    t_first = @elapsed soln = nlsolve(df, x_guess; method = method, iterations = iteration_limit)
+
 
     t_second = 0
     all_pressures_non_neg = check_for_negative_pressures(ss, soln.zero)
@@ -41,7 +42,7 @@ function run_simulator!(ss::SteadySimulator;
     if all_pressures_non_neg == false
         @info "correcting pressures..."
         reinitialize_for_positive_pressure!(ss, soln.zero)
-        t_second, soln = _invoke_solver(residual_fun, Jacobian_fun, df, soln.zero, method, iteration_limit)
+        t_second = @elapsed soln = nlsolve(df, soln.zero; method = method, iterations = iteration_limit)
         
         all_pressures_non_neg = check_for_negative_pressures(ss, soln.zero)
         convergence_state = converged(soln)
@@ -95,15 +96,6 @@ function run_simulator!(ss::SteadySimulator;
         t_first + t_second, 
         soln.zero, Int[])
 end
-
-function _invoke_solver(r, J, df, x_0, method, iter)
-    if isa(df, Nothing)
-        t = @elapsed soln = nlsolve(r, J, x_0; method = method, iterations = iter)
-    else 
-        t = @elapsed soln = nlsolve(df, x_0; method = method, iterations = iter)
-    end 
-    return t, soln
-end 
 
 function _create_initial_guess_dof!(ss::SteadySimulator)::Array
     ndofs = length(ref(ss, :dof))
