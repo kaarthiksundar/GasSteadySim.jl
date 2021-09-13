@@ -1,9 +1,9 @@
 function is_feasible!(ss::SteadySimulator; 
-    optimizer=optimizer_with_attributes(Clp.Optimizer, "LogLevel" => 0, "InfeasibleReturn" => 1))
+    optimizer=optimizer_with_attributes(Clp.Optimizer, "LogLevel" => 1, "InfeasibleReturn" => 1))
 
     set_optimizer(ss.feasibility_model, optimizer)
     optimize!(ss.feasibility_model)
-
+    @show termination_status(ss.feasibility_model)
 end
 
 function run_simulator!(ss::SteadySimulator; 
@@ -16,7 +16,9 @@ function run_simulator!(ss::SteadySimulator;
 
     residual_fun! = (r_dof, x_dof) -> assemble_residual!(ss, x_dof, r_dof)
     Jacobian_fun! = (J_dof, x_dof) -> assemble_mat!(ss, x_dof, J_dof)
-    df = OnceDifferentiable(residual_fun!, Jacobian_fun!, rand(n), rand(n), spzeros(n, n))
+    J0 = spzeros(n, n)
+    assemble_mat!(ss, rand(n), J0)
+    df = OnceDifferentiable(residual_fun!, Jacobian_fun!, rand(n), rand(n), J0)
 
     t_first = @elapsed soln = nlsolve(df, x_guess; method = method, iterations = iteration_limit)
 

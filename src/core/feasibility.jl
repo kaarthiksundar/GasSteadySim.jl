@@ -32,16 +32,20 @@ function construct_feasibility_model!(ss::SteadySimulator)
     # state variables
     var[:p] = @variable(m, [i in keys(ref(ss, :node))], 
         lower_bound = ref(ss, :node, i, "min_pressure"), 
-        upper_bound = ref(ss, :node, i, "max_pressure")) 
+        upper_bound = ref(ss, :node, i, "max_pressure"), 
+        base_name = "p") 
     var[:f_pipe] = @variable(m, [i in keys(ref(ss, :pipe))],
         lower_bound = ref(ss, :pipe, i, "min_flow"),
-        upper_bound = ref(ss, :pipe, i, "max_flow")) 
-    var[:f_compressor] = @variable(m, [i in keys(ref(ss, :compressor))], lower_bound = 0.0) 
+        upper_bound = ref(ss, :pipe, i, "max_flow"),
+        base_name = "f_pipe") 
+    var[:f_compressor] = @variable(m, [i in keys(ref(ss, :compressor))], 
+        lower_bound = 0.0,
+        base_name = "f_compressor") 
 
     # auxiliary variables 
-    var[:p_sqr] = @variable(m, [i in keys(ref(ss, :node))])
-    (b2 != 0.0) && (var[:p_cube] = @variable(m, [i in keys(ref(ss, :node))]))
-    var[:f_abs_f] = @variable(m, [i in keys(ref(ss, :pipe))])
+    var[:p_sqr] = @variable(m, [i in keys(ref(ss, :node))], base_name = "p_sqr")
+    (b2 != 0.0) && (var[:p_cube] = @variable(m, [i in keys(ref(ss, :node))], base_name = "p_cube"))
+    var[:f_abs_f] = @variable(m, [i in keys(ref(ss, :pipe))], base_name = "f_abs_f")
 
     # relaxation constraints 
     for (i, node) in ref(ss, :node)

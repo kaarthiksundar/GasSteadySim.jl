@@ -2,14 +2,14 @@
 
 
 """function assembles the residuals"""
-function assemble_residual!(ss::SteadySimulator, x_dof::Array, residual_dof::Array)
+function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     _eval_junction_equations!(ss, x_dof, residual_dof)
     _eval_pipe_equations!(ss, x_dof, residual_dof)
     _eval_compressor_equations!(ss, x_dof, residual_dof)
 end
 
 """function assembles the Jacobians"""
-function assemble_mat!(ss::SteadySimulator, x_dof::Array, J::SparseArrays.SparseMatrixCSC{Float64, Int64})
+function assemble_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArray)
     fill!(J, 0)
     _eval_junction_equations_mat!(ss, x_dof, J)
     _eval_pipe_equations_mat!(ss, x_dof, J)
@@ -17,7 +17,7 @@ function assemble_mat!(ss::SteadySimulator, x_dof::Array, J::SparseArrays.Sparse
 end
 
 """residual computation for junctions"""
-function _eval_junction_equations!(ss::SteadySimulator, x_dof::Array, residual_dof::Array)
+function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     @inbounds for (node_id, junction) in ref(ss, :node)
         eqn_no = junction[:dof]
         ctrl_type, val = control(ss, :node, node_id) # val is withdrawal or pressure
@@ -42,7 +42,7 @@ function _eval_junction_equations!(ss::SteadySimulator, x_dof::Array, residual_d
 end
 
 """residual computation for pipes"""
-function _eval_pipe_equations!(ss::SteadySimulator, x_dof::Array, residual_dof::Array)
+function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     @inbounds for (_, pipe) in ref(ss, :pipe)
         eqn_no = pipe[:dof] 
         f = x_dof[eqn_no]
@@ -59,7 +59,7 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::Array, residual_dof::
 end
 
 """residual computation for compressor"""
-function _eval_compressor_equations!(ss::SteadySimulator, x_dof::Array, residual_dof::Array)
+function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     @inbounds for (comp_id, comp) in ref(ss, :compressor)
         eqn_no = comp[:dof] 
         ctr, cmpr_val = control(ss, :compressor, comp_id)
@@ -79,8 +79,8 @@ end
 
 
 """in place Jacobian computation for junctions"""
-function _eval_junction_equations_mat!(ss::SteadySimulator, x_dof::Array, 
-        J::SparseArrays.SparseMatrixCSC{Float64, Int64})
+function _eval_junction_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
+        J::AbstractArray)
     @inbounds for (node_id, junction) in ref(ss, :node)
         eqn_no = junction[:dof]
         ctrl_type, _ = control(ss, :node, node_id) # val is withdrawal or pressure
@@ -105,8 +105,8 @@ end
 
 
 """in place Jacobian computation for pipes"""
-function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::Array, 
-        J::SparseArrays.SparseMatrixCSC{Float64, Int64})
+function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
+        J::AbstractArray)
     @inbounds for (key, pipe) in ref(ss, :pipe)
         eqn_no = pipe[:dof] 
         f = x_dof[eqn_no]
@@ -131,8 +131,8 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::Array,
 end
 
 """in place Jacobian computation for compressors"""
-function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::Array, 
-        J::SparseArrays.SparseMatrixCSC{Float64, Int64})
+function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
+        J::AbstractArray)
     @inbounds for (comp_id, comp) in ref(ss, :compressor)
         eqn_no = comp[:dof] 
         ctr, cmpr_val = control(ss, :compressor, comp_id)
