@@ -6,10 +6,12 @@ function add_flow_bounds_to_ref!(ss::SteadySimulator)
         fr_node_p_max = ref(ss, :node, fr_node, "max_pressure")
         to_node_p_min = ref(ss, :node, to_node, "min_pressure")
         to_node_p_max = ref(ss, :node, to_node, "max_pressure")
-        c = ss.nominal_values[:mass_flow]^2  / (ss.nominal_values[:pressure] * ss.nominal_values[:density])
-
+        Euler_num = ss.nominal_values[:pressure] / (ss.nominal_values[:density] * ss.nominal_values[:sound_speed]^2)
+        Mach_num = ss.nominal_values[:velocity] / ss.nominal_values[:sound_speed]
+        c = Mach_num^2 / Euler_num
         b1, b2 = get_eos_coeffs(ss)
         resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
+    
         beta = 1/resistance
         p_sqr_max = fr_node_p_max^2 - to_node_p_min^2 
         p_cube_max = fr_node_p_max^3 - to_node_p_min^3 
@@ -34,6 +36,8 @@ function construct_feasibility_model!(ss::SteadySimulator)
         lower_bound = ref(ss, :node, i, "min_pressure"), 
         upper_bound = ref(ss, :node, i, "max_pressure"), 
         base_name = "p") 
+    var[:w] = @variable(m, [i in keys(ref(ss, :node))], 
+        base_name = "withdrawal")
     var[:f_pipe] = @variable(m, [i in keys(ref(ss, :pipe))],
         lower_bound = ref(ss, :pipe, i, "min_flow"),
         upper_bound = ref(ss, :pipe, i, "max_flow"),
@@ -43,8 +47,12 @@ function construct_feasibility_model!(ss::SteadySimulator)
         base_name = "f_compressor") 
 
     # auxiliary variables 
-    var[:p_sqr] = @variable(m, [i in keys(ref(ss, :node))], base_name = "p_sqr")
-    (b2 != 0.0) && (var[:p_cube] = @variable(m, [i in keys(ref(ss, :node))], base_name = "p_cube"))
+    var[:p_sqr] = @variable(m, [i in keys(ref(ss, :node))], 
+        lower_bound = ref(ss, :node, i, "min_pressure")^2, 
+        base_name = "p_sqr")
+    (b2 != 0.0) && (var[:p_cube] = @variable(m, [i in keys(ref(ss, :node))], 
+        lower_bound = ref(ss, :node, i, "min_pressure")^3, 
+        base_name = "p_cube"))
     var[:f_abs_f] = @variable(m, [i in keys(ref(ss, :pipe))], base_name = "f_abs_f")
 
     # relaxation constraints 
@@ -60,9 +68,9 @@ function construct_feasibility_model!(ss::SteadySimulator)
         min_pressure = ref(ss, :node, i, "min_pressure") 
         max_pressure = ref(ss, :node, i, "max_pressure")
         partition = collect(range(min_pressure, max_pressure, length = 6))
-        construct_univariate_relaxation!(m, a->a^2, var[:p][i], var[:p_sqr][i], partition, false)
+        construct_univariate_relaxation!(m, a->a^2, var[:p][i], var[:p_sqr][i], partition, true)
         if (b2 != 0)
-            construct_univariate_relaxation!(m, a->a^3, var[:p][i], var[:p_cube][i], partition, false)
+            construct_univariate_relaxation!(m, a->a^3, var[:p][i], var[:p_cube][i], partition, true)
         end
     end 
 
@@ -76,21 +84,22 @@ function construct_feasibility_model!(ss::SteadySimulator)
         else 
             partition = collect(range(min_flow, max_flow, length = 6))
         end 
-        construct_univariate_relaxation!(m, a->a*abs(a), var[:f_pipe][i], var[:f_abs_f][i], partition, false; 
+        construct_univariate_relaxation!(m, a->a*abs(a), var[:f_pipe][i], var[:f_abs_f][i], partition, true; 
             f_dash=a->2*a*sign(a))
     end 
 
-
     # nodal constraints 
     con[:node] = Dict{Int,Any}()
+    con[:node_inputs] = Dict{Int,Any}()
     for (i, node) in ref(ss, :node)
         _, val = control(ss, :node, i)
         if node["is_slack"] == 1 
-            con[:node][i] = @constraint(m, var[:p][i] == val) 
-            continue 
-        end
+            con[:node_inputs][i] = @constraint(m, var[:p][i] == val) 
+        else 
+            con[:node_inputs][i] = @constraint(m, var[:w][i] == val)
+        end 
         inflow = 0.0 
-        outflow = val
+        outflow = var[:w][i]
         for k in ref(ss, :incoming_pipes, i)
             inflow += var[:f_pipe][k]
         end 
@@ -105,6 +114,9 @@ function construct_feasibility_model!(ss::SteadySimulator)
         end 
         con[:node][i] = @constraint(m, inflow - outflow == 0)
     end 
+
+    # balance constraint
+    con[:balance] = @constraint(m, sum(var[:w]) == 0)
 
     # compressor constraints 
     con[:compressor] = Dict{Int,Any}()
@@ -127,11 +139,12 @@ function construct_feasibility_model!(ss::SteadySimulator)
     for (i, pipe) in ref(ss, :pipe)
         fr_node = pipe["fr_node"]  
         to_node = pipe["to_node"]
+        Euler_num = ss.nominal_values[:pressure] / (ss.nominal_values[:density] * ss.nominal_values[:sound_speed]^2)
+        Mach_num = ss.nominal_values[:velocity] / ss.nominal_values[:sound_speed]
+        c = Mach_num^2 / Euler_num
         b1, b2 = get_eos_coeffs(ss)
-        c = ss.nominal_values[:mass_flow]^2  / (ss.nominal_values[:pressure] * ss.nominal_values[:density])
         resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
         sqr_term = (b1/2) * (var[:p_sqr][fr_node] - var[:p_sqr][to_node])
-
         if (b2 != 0)
             cube_term = (b2/3) * (var[:p_cube][to_node] - var[:p_cube][to_node])
             con[:pipe][i] = @constraint(m,  sqr_term + cube_term - var[:f_abs_f][i] * resistance == 0)

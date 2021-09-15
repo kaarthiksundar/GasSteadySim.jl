@@ -1,5 +1,5 @@
 function is_feasible!(ss::SteadySimulator; 
-    optimizer=optimizer_with_attributes(Clp.Optimizer, "LogLevel" => 1, "InfeasibleReturn" => 1))
+    optimizer=optimizer_with_attributes(Cbc.Optimizer, "LogLevel" => 1, "InfeasibleReturn" => 1))
 
     set_optimizer(ss.feasibility_model, optimizer)
     optimize!(ss.feasibility_model)
@@ -22,8 +22,7 @@ function run_simulator!(ss::SteadySimulator;
 
     t_first = @elapsed soln = nlsolve(df, x_guess; method = method, iterations = iteration_limit)
 
-
-    t_second = 0
+    t_second = 0.0
     all_pressures_non_neg = check_for_negative_pressures(ss, soln.zero)
     convergence_state = converged(soln)
 
