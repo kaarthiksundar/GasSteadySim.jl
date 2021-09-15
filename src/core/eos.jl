@@ -9,38 +9,38 @@ function _get_eos(eos::Symbol)
 end
 
 function _ideal_coeffs(nominal_values::Dict{Symbol,Any}, params::Dict{Symbol,Any})::Tuple{Float64,Float64}
-    k = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
-    return k, 0.0 # dimensionless
+    Euler_num = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
+    return Euler_num, 0.0 # dimensionless
 end
 
 function _simple_cnga_coeffs(nominal_values::Dict{Symbol,Any}, params::Dict{Symbol,Any})::Tuple{Float64,Float64}
     p0 = nominal_values[:pressure]
-    k = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
+    Euler_num = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
     b1 = 1.00300865  # dimensionless
     b2 = 2.96848838e-8 # units 1/pressure
-    return k*b1, k*b2*p0
+    return Euler_num * b1, Euler_num * p0 * b2
 end
 
 function _full_cnga_coeffs(nominal_values::Dict{Symbol, Any}, params::Dict{Symbol,Any})::Tuple{Float64,Float64}
     p0, p_atm = nominal_values[:pressure], 101350.0
-    k = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
+    Euler_num = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
     G, T = params[:gas_specific_gravity], params[:temperature]
     a1, a2, a3 = 344400.0, 1.785, 3.825 # all are dimensionless
 
     b1 = 1.0 + a1 * (p_atm/6894.75729) * ( 10 ^ (a2 * G) ) / (1.8 * T) ^ a3 # dimensionless
     b2 = a1 * (10.0 ^ (a2 * G) ) / (6894.75729 * (1.8 * T)^a3 ) # units 1/pressure
-    return k*b1, k*b2*p0
+    return Euler_num * b1, Euler_num * p0 * b2
 end
 
 
 function _pressure_to_density_ideal(p, nominal_values::Dict{Symbol,Any}, params::Dict{Symbol,Any})
-    k = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
-    return k*p  
+    Euler_num = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
+    return Euler_num * p  
 end
 
 function _density_to_pressure_ideal(rho, nominal_values::Dict{Symbol,Any}, params::Dict{Symbol,Any})
-    k = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
-    return rho/k  
+    Euler_num = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
+    return rho/Euler_num  
 end
 
 function _pressure_to_density_simple_cnga(p, nominal_values::Dict{Symbol,Any}, params::Dict{Symbol,Any})
