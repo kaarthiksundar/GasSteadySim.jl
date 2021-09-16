@@ -144,6 +144,8 @@ function process_data!(data::Dict{String,Any})
         end 
     nominal_values[:mass_flux] = nominal_values[:density] * nominal_values[:velocity]
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
+    nominal_values[:euler_num] = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
+    nominal_values[:mach_num] = nominal_values[:velocity] / nominal_values[:sound_speed]
     
     return params, nominal_values
 end
