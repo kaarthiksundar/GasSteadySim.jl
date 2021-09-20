@@ -4,8 +4,6 @@ authors = ["Shriram Srinivasan and Kaarthik Sundar"]
 version = "0.1.0"
 
 [deps]
-Cbc = "9961bab8-2fa3-5c5a-9d89-47fab24efd76"
-Clp = "e2554f3b-3117-50c0-817c-e040a3ddf72d"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 LineSearches = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
@@ -14,7 +12,6 @@ PolyhedralRelaxations = "2e741578-48fa-11ea-2d62-b52c946f73a0"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [compat]
-Clp = "~0.8"
 JSON = "~0.18, ~0.19, ~0.20, ~0.21"
 JuMP = "~0.21"
 LineSearches = "7"
@@ -24,6 +21,8 @@ julia = "^1"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Cbc = "9961bab8-2fa3-5c5a-9d89-47fab24efd76"
+Clp = "e2554f3b-3117-50c0-817c-e040a3ddf72d"
 
 [targets]
-test = ["Test"]
+test = ["Test", "Cbc", "Clp"]

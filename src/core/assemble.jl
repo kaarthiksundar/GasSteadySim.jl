@@ -48,7 +48,7 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
         f = x_dof[eqn_no]
         fr_node = pipe["fr_node"]  
         to_node = pipe["to_node"]
-        c = ss.nominal_values[:mach_num]^2 / ss.nominal_values[:euler_num] 
+        c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
 
         b1, b2 = get_eos_coeffs(ss)
         pressure_sqr_diff = x_dof[ref(ss, :node, fr_node, :dof)]^2 - x_dof[ref(ss, :node, to_node, :dof)]^2
@@ -116,7 +116,7 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
         eqn_fr = ref(ss, :node, fr_node, :dof)
         p_fr = x_dof[eqn_fr]
         p_to = x_dof[eqn_to]
-        c = ss.nominal_values[:mach_num]^2 / ss.nominal_values[:euler_num] 
+        c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
 
 
         b1, b2 = get_eos_coeffs(ss)

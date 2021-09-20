@@ -1,5 +1,4 @@
-function is_feasible!(ss::SteadySimulator; 
-    optimizer=optimizer_with_attributes(Cbc.Optimizer, "LogLevel" => 1, "InfeasibleReturn" => 1))
+function is_feasible!(ss::SteadySimulator, optimizer)
 
     set_optimizer(ss.feasibility_model, optimizer)
     optimize!(ss.feasibility_model)
