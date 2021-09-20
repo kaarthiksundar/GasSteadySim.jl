@@ -6,8 +6,6 @@ using SparseArrays
 using LineSearches
 using JuMP
 using PolyhedralRelaxations
-using Clp
-using Cbc
 
 include("io/json.jl")
 include("io/data_utils.jl")
