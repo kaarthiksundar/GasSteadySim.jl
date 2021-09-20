@@ -22,7 +22,7 @@ function add_flow_bounds_to_ref!(ss::SteadySimulator)
     end 
 end 
 
-function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Symbol=:milp)
+function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Symbol=:milp, num_partitions::Int=4)
     milp = (feasibility_model == :milp) ? true : false
     add_flow_bounds_to_ref!(ss)
     var = ss.variables
@@ -66,7 +66,7 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         end 
         min_pressure = ref(ss, :node, i, "min_pressure") 
         max_pressure = ref(ss, :node, i, "max_pressure")
-        partition = collect(range(min_pressure, max_pressure, length = 4))
+        partition = collect(range(min_pressure, max_pressure, length = num_partitions))
         construct_univariate_relaxation!(m, a->a^2, var[:p][i], var[:p_sqr][i], partition, milp)
         if (b2 != 0)
             construct_univariate_relaxation!(m, a->a^3, var[:p][i], var[:p_cube][i], partition, milp)
@@ -78,10 +78,10 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         max_flow = pipe["max_flow"]
         partition = []
         if (min_flow < 0)
-            partition = collect(range(min_flow, 0.0, length = 2))
-            append!(partition, collect(range(0.0, max_flow, length = 2))[2:end])
+            partition = collect(range(min_flow, 0.0, length = Int(num_partitions/2)))
+            append!(partition, collect(range(0.0, max_flow, length = Int(num_partitions/2)))[2:end])
         else 
-            partition = collect(range(min_flow, max_flow, length = 4))
+            partition = collect(range(min_flow, max_flow, length = num_partitions))
         end 
         construct_univariate_relaxation!(m, a->a*abs(a), var[:f_pipe][i], var[:f_abs_f][i], partition, milp; 
             f_dash=a->2*a*sign(a))

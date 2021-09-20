@@ -1,8 +1,9 @@
-function is_feasible!(ss::SteadySimulator, optimizer)
+function is_feasible!(ss::SteadySimulator, optimizer)::Bool
 
     set_optimizer(ss.feasibility_model, optimizer)
     optimize!(ss.feasibility_model)
-    @show termination_status(ss.feasibility_model)
+    is_infeasible = (termination_status(ss.feasibility_model) == MOI.INFEASIBLE)
+    return !is_infeasible
 end
 
 function run_simulator!(ss::SteadySimulator; 
