@@ -72,9 +72,17 @@ function populate_solution!(ss::SteadySimulator)
         sol["pipe_flow"][i] = mass_flow_convertor(ref(ss, :pipe, i, "mass_flow"))
     end
     
-    for i in collect(keys(ref(ss, :compressor)))
-        sol["compressor_flow"][i] = mass_flow_convertor(ref(ss, :compressor, i, "flow"))
+    if haskey(ref(ss), :compressor)
+        for i in collect(keys(ref(ss, :compressor)))
+            sol["compressor_flow"][i] = mass_flow_convertor(ref(ss, :compressor, i, "flow"))
+        end
     end
+
+    if haskey(ref(ss), :regulator)
+        for i in collect(keys(ref(ss, :regulator)))
+            sol["regulator_flow"][i] = mass_flow_convertor(ref(ss, :regulator, i, "flow"))
+        end 
+    end 
 
     return
 end 

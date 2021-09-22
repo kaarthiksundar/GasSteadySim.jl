@@ -34,11 +34,15 @@ initial_compressor_flow(ss::SteadySimulator, id::Int64) =
 initial_nodal_pressure(ss::SteadySimulator, id::Int64) = 
     ss.initial_guess[:node][id]
 
+initial_regulator_flow(ss::SteadySimulator, id::Int64) = 
+    ss.initial_guess[:regulator][id]
+
 function control(ss::SteadySimulator,
     key::Symbol, id::Int64)::Tuple{CONTROL_TYPE,Float64}
     (key == :node) && (return get_nodal_control(ss, id))
     (key == :compressor) && (return get_compressor_control(ss, id))
-    @error "control available only for nodes and compressors"
+    (key == :regulator) && (return get_regulator_control(ss, id))
+    @error "control available only for nodes, compressors and regulators"
     return CONTROL_TYPE::unknown_control, 0.0
 end
 
@@ -69,11 +73,29 @@ function get_compressor_control(ss::SteadySimulator,
     return CONTROL_TYPE(control_type), val
 end
 
+function get_regulator_control(ss::SteadySimulator,
+    id::Int64)::Tuple{CONTROL_TYPE,Float64}
+    control_type= ss.boundary_conditions[:regulator][id]["control_type"]
+    val = ss.boundary_conditions[:regulator][id]["val"]
+
+    return CONTROL_TYPE(control_type), val
+end
+
+function get_regulator_control(ss::SteadySimulator,
+    id::Int64)::Tuple{CONTROL_TYPE,Float64}
+    control_type= ss.boundary_conditions[:regulator][id]["control_type"]
+    val = ss.boundary_conditions[:regulator][id]["val"]
+
+    return CONTROL_TYPE(control_type), val
+end
+
 @enum CONTROL_TYPE begin
     c_ratio_control = 0
     discharge_pressure_control = 1
     flow_control = 2
-    pressure_control = 10
+    pressure_control = 3
+    on_control = 4 
+    off_control = 5
     unknown_control = 100
 end
 
