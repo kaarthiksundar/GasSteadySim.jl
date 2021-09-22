@@ -17,6 +17,7 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal, feasib
     ref = build_ref(data, ref_extensions= [
         _add_pipe_info_at_nodes!,
         _add_compressor_info_at_nodes!,
+        _add_regulator_info_at_nodes!,
         _add_index_info!,
         _add_incident_dofs_info_at_nodes!
         ]

@@ -3,6 +3,7 @@ function _build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
 
     bc[:node] = Dict() 
     bc[:compressor] = Dict()
+    bc[:regulator] = Dict()
 
     if !haskey(data, "boundary_pslack") 
         @error "Simulator requires at least one slack node pressure for uniqueness of solutions"
@@ -30,6 +31,17 @@ function _build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
             @error "Simulator does not support compressor flow or discharge pressure specification for compressor boundary condition"
         end 
         bc[:compressor][id] = Dict(
+            "val" => value["value"],
+            "control_type" => value["control_type"]
+        )
+    end 
+
+    for (i, value) in get(data, "boundary_regulator", [])
+        id = parse(Int64, i)
+        if value["control_type"] != 0 
+            @error "Simulator does not support compressor flow or discharge pressure specification for compressor boundary condition"
+        end 
+        bc[:regulator][id] = Dict(
             "val" => value["value"],
             "control_type" => value["control_type"]
         )
