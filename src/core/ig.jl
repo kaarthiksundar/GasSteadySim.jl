@@ -5,7 +5,7 @@ function _build_ig(data::Dict{String,Any})::Dict{Symbol,Any}
     ig[:node] = Dict() 
     ig[:pipe] = Dict()
     ig[:compressor] = Dict()
-    ig[:regulator] = Dict()
+    ig[:control_valve] = Dict()
 
     for (i, value) in get(data, "nodal_pressure", [])
         id = parse(Int64, i)
@@ -22,9 +22,9 @@ function _build_ig(data::Dict{String,Any})::Dict{Symbol,Any}
         ig[:compressor][id] = value
     end 
 
-    for (i, value) in get(data, "regulator_flow", [])
+    for (i, value) in get(data, "control_valve_flow", [])
         id = parse(Int64, i)
-        ig[:regulator][id] = value
+        ig[:control_valve][id] = value
     end 
 
     return ig

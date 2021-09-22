@@ -46,15 +46,15 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[name][id]["flow"] = NaN
     end
 
-    for (i, regulator) in get(data, "regulators", [])
-        name = :regulator
+    for (i, control_valve) in get(data, "control_valves", [])
+        name = :control_valve
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == regulator["regulator_id"]
+        @assert id == control_valve["control_valve_id"]
         ref[name][id]["id"] = id
-        ref[name][id]["to_node"] = regulator["to_node"]
-        ref[name][id]["fr_node"] = regulator["from_node"]
+        ref[name][id]["to_node"] = control_valve["to_node"]
+        ref[name][id]["fr_node"] = control_valve["from_node"]
         ref[name][id]["control_type"] = unknown_control
         ref[name][id]["c_ratio"] = NaN
         ref[name][id]["discharge_pressure"] = NaN
@@ -85,9 +85,9 @@ function _add_index_info!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
         dofid += 1
     end
 
-    for (i, regulator) in get(ref, :regulator, [])
-        regulator[:dof] = dofid
-        ref[:dof][dofid] = (:regulator, i)
+    for (i, control_valve) in get(ref, :control_valve, [])
+        control_valve[:dof] = dofid
+        ref[:dof][dofid] = (:control_valve, i)
         dofid += 1
     end
 end
@@ -111,9 +111,9 @@ function _add_incident_dofs_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{Str
         push!(ref[:outgoing_dofs][compressor["fr_node"]], compressor[:dof])
     end
 
-    for (_, regulator) in get(ref, :regulator, [])
-        push!(ref[:incoming_dofs][regulator["to_node"]], regulator[:dof])
-        push!(ref[:outgoing_dofs][regulator["fr_node"]], regulator[:dof])
+    for (_, control_valve) in get(ref, :control_valve, [])
+        push!(ref[:incoming_dofs][control_valve["to_node"]], control_valve[:dof])
+        push!(ref[:outgoing_dofs][control_valve["fr_node"]], control_valve[:dof])
     end
 
     return
@@ -151,18 +151,18 @@ function _add_compressor_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String
     return
 end
 
-function _add_regulator_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
-    ref[:incoming_regulators] = Dict{Int64, Vector{Int64}}()
-    ref[:outgoing_regulators] = Dict{Int64, Vector{Int64}}()
+function _add_control_valve_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+    ref[:incoming_control_valves] = Dict{Int64, Vector{Int64}}()
+    ref[:outgoing_control_valves] = Dict{Int64, Vector{Int64}}()
     
     for (i, _) in ref[:node]
-        ref[:incoming_regulators][i] = []
-        ref[:outgoing_regulators][i] = []
+        ref[:incoming_control_valves][i] = []
+        ref[:outgoing_control_valves][i] = []
     end
 
-    for (id, regulator) in get(ref, :regulator, [])
-        push!(ref[:incoming_regulators][regulator["to_node"]], id)
-        push!(ref[:outgoing_regulators][regulator["fr_node"]], id)
+    for (id, control_valve) in get(ref, :control_valve, [])
+        push!(ref[:incoming_control_valves][control_valve["to_node"]], id)
+        push!(ref[:outgoing_control_valves][control_valve["fr_node"]], id)
     end
     return
 end

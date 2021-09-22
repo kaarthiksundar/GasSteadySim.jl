@@ -6,7 +6,7 @@ function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_
     _eval_junction_equations!(ss, x_dof, residual_dof)
     _eval_pipe_equations!(ss, x_dof, residual_dof)
     _eval_compressor_equations!(ss, x_dof, residual_dof)
-    _eval_regulator_equations!(ss, x_dof, residual_dof)
+    _eval_control_valve_equations!(ss, x_dof, residual_dof)
 end
 
 """function assembles the Jacobians"""
@@ -15,7 +15,7 @@ function assemble_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArr
     _eval_junction_equations_mat!(ss, x_dof, J)
     _eval_pipe_equations_mat!(ss, x_dof, J)
     _eval_compressor_equations_mat!(ss, x_dof, J)
-    _eval_regulator_equations_mat!(ss, x_dof, J)
+    _eval_control_valve_equations_mat!(ss, x_dof, J)
 end
 
 """residual computation for junctions"""
@@ -80,19 +80,19 @@ function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, 
     end
 end
 
-"""residual computation for regulators"""
-function _eval_regulator_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
-    (!haskey(ref(ss), :regulator)) && (return)
-    @inbounds for (reg_id, reg) in ref(ss, :regulator)
-        eqn_no = reg[:dof] 
-        ctr, reg_val = control(ss, :regulator, reg_id)
+"""residual computation for control_valves"""
+function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
+    (!haskey(ref(ss), :control_valve)) && (return)
+    @inbounds for (reg_id, cv) in ref(ss, :control_valve)
+        eqn_no = cv[:dof] 
+        ctr, cv_val = control(ss, :control_valve, reg_id)
         
         if ctr  == c_ratio_control
-            to_node = reg["to_node"]
-            fr_node = reg["fr_node"]
-            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, :dof)] - reg_val * x_dof[ref(ss, :node, fr_node,:dof)]
+            to_node = cv["to_node"]
+            fr_node = cv["fr_node"]
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, :dof)] - cv_val * x_dof[ref(ss, :node, fr_node,:dof)]
         elseif ctr == flow_control
-            residual_dof[eqn_no] = x_dof[eqn_no] - reg_val
+            residual_dof[eqn_no] = x_dof[eqn_no] - cv_val
         elseif ctr == discharge_pressure_control
             to_node = comp["to_node"]
             residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node,:dof)] - cmpr_val
@@ -177,21 +177,21 @@ function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::AbstractArr
     end
 end
 
-"""in place Jacobian computation for regulators"""
-function _eval_regulator_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
+"""in place Jacobian computation for control_valves"""
+function _eval_control_valve_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
         J::AbstractArray)
-    (!haskey(ref(ss), :regulator)) && (return)
-    @inbounds for (reg_id, reg) in ref(ss, :regulator)
-        eqn_no = reg[:dof] 
-        ctr, reg_val = control(ss, :regulator, reg_id)
-        to_node = reg["to_node"]
-        fr_node = reg["fr_node"]
+    (!haskey(ref(ss), :control_valve)) && (return)
+    @inbounds for (reg_id, cv) in ref(ss, :control_valve)
+        eqn_no = cv[:dof] 
+        ctr, cv_val = control(ss, :control_valve, reg_id)
+        to_node = cv["to_node"]
+        fr_node = cv["fr_node"]
         eqn_to = ref(ss, :node, to_node, :dof)
         eqn_fr = ref(ss, :node, fr_node, :dof)
         
         if ctr  == c_ratio_control
             J[eqn_no, eqn_to] = 1
-            J[eqn_no, eqn_fr] = (-reg_val)
+            J[eqn_no, eqn_fr] = (-cv_val)
         elseif ctr == flow_control
             J[eqn_no, eqn_no] = 1
         elseif ctr == discharge_pressure_control

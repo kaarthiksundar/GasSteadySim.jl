@@ -78,9 +78,9 @@ function populate_solution!(ss::SteadySimulator)
         end
     end
 
-    if haskey(ref(ss), :regulator)
-        for i in collect(keys(ref(ss, :regulator)))
-            sol["regulator_flow"][i] = mass_flow_convertor(ref(ss, :regulator, i, "flow"))
+    if haskey(ref(ss), :control_valve)
+        for i in collect(keys(ref(ss, :control_valve)))
+            sol["control_valve_flow"][i] = mass_flow_convertor(ref(ss, :control_valve, i, "flow"))
         end 
     end 
 
