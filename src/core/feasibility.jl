@@ -61,10 +61,8 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
     for (i, node) in ref(ss, :node)
         _, val = control(ss, :node, i)
         if node["is_slack"] == 1
-            @constraint(m, var[:p_sqr][i] == val^2) 
-            if (b2 != 0)
-                @constraint(m, var[:p_cube][i] == val^3) 
-            end 
+            rhs = (b1/2) * val^2 + (b2/3) * val^3
+            @constraint(m, var[:pi][i] == rhs) 
             continue
         end 
         min_pressure = ref(ss, :node, i, "min_pressure") 
