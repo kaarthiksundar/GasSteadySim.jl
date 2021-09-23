@@ -33,15 +33,15 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
 
         if sym == :compressor
             ref(ss, sym, local_id)["flow"] = x_dof[i]
-            if x_dof[i] < 0
-                push!(negative_flow_in_compressors, local_id)
-            end
             ctrl_type, val = control(ss, :compressor, local_id)
             ref(ss, sym, local_id)["control_type"] = ctrl_type
             to_node = ref(ss, sym, local_id)["to_node"]
             fr_node = ref(ss, sym, local_id)["fr_node"]
             ref(ss, sym, local_id)["discharge_pressure"] =  x_dof[ref(ss, :node, to_node, :dof)]
             ref(ss, sym, local_id)["c_ratio"] = x_dof[ref(ss, :node, to_node, :dof)]/x_dof[ref(ss, :node, fr_node, :dof)]    
+            if x_dof[i] < 0 && ref(ss, sym, local_id)["c_ratio"] > 1.0
+                push!(negative_flow_in_compressors, local_id)
+            end
         end
     end
 

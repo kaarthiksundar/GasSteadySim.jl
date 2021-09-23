@@ -47,9 +47,11 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
     var[:f_compressor] = @variable(m, [i in keys(ref(ss, :compressor))], 
         lower_bound = 0.0,
         base_name = "f_compressor") 
-    var[:f_control_valve] = @variable(m, [i in keys(ref(ss, :control_valve))], 
-        lower_bound = 0.0,
-        base_name = "f_compressor") 
+    if haskey(ref(ss), :control_valve)
+        var[:f_control_valve] = @variable(m, [i in keys(ref(ss, :control_valve))], 
+            lower_bound = 0.0,
+            base_name = "f_control_valve")
+    end 
 
     # auxiliary variables 
     if (b2 == 0)
