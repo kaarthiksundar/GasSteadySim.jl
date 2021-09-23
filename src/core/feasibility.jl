@@ -47,6 +47,9 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
     var[:f_compressor] = @variable(m, [i in keys(ref(ss, :compressor))], 
         lower_bound = 0.0,
         base_name = "f_compressor") 
+    var[:f_control_valve] = @variable(m, [i in keys(ref(ss, :control_valve))], 
+        lower_bound = 0.0,
+        base_name = "f_compressor") 
 
     # auxiliary variables 
     if (b2 == 0)
@@ -114,11 +117,17 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         for k in ref(ss, :incoming_compressors, i)
             inflow += var[:f_compressor][k]
         end 
+        for k in ref(ss, :incoming_control_valves, i)
+            inflow += var[:f_control_valve][k]
+        end 
         for k in ref(ss, :outgoing_pipes, i)
             outflow += var[:f_pipe][k]
         end 
         for k in ref(ss, :outgoing_compressors, i)
             outflow += var[:f_compressor][k]
+        end 
+        for k in ref(ss, :outgoing_control_valves, i)
+            outflow += var[:f_control_valve][k]
         end 
         con[:node][i] = @constraint(m, inflow - outflow == 0)
     end 
@@ -141,6 +150,24 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
             con[:compressor][i] = @constraint(m, var[:p][to_node] == val)
         end
     end 
+
+    # control valve constraints 
+    if haskey(ref(ss), :control_valve)
+        con[:control_valve] = Dict{Int,Any}()
+        for (i, cv) in ref(ss, :control_valve)
+            ctrl, val = control(ss, :control_valve, i)
+            if ctrl  == c_ratio_control
+                to_node = cv["to_node"]
+                fr_node = cv["fr_node"]
+                con[:control_valve][i] = @constraint(m, var[:p][to_node] == val * var[:p][fr_node])
+            elseif ctr == flow_control
+                con[:control_valve][i] = @constraint(m, var[:f_control_valve][i] == val)
+            elseif ctr == discharge_pressure_control
+                to_node = cv["to_node"]
+                con[:control_valve][i] = @constraint(m, var[:p][to_node] == val)
+            end
+        end 
+    end
 
     # pipe constraints 
     con[:pipe] = Dict{Int,Any}()

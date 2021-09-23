@@ -83,9 +83,9 @@ end
 """residual computation for control_valves"""
 function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     (!haskey(ref(ss), :control_valve)) && (return)
-    @inbounds for (reg_id, cv) in ref(ss, :control_valve)
+    @inbounds for (cv_id, cv) in ref(ss, :control_valve)
         eqn_no = cv[:dof] 
-        ctr, cv_val = control(ss, :control_valve, reg_id)
+        ctr, cv_val = control(ss, :control_valve, cv_id)
         
         if ctr  == c_ratio_control
             to_node = cv["to_node"]
@@ -181,9 +181,9 @@ end
 function _eval_control_valve_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
         J::AbstractArray)
     (!haskey(ref(ss), :control_valve)) && (return)
-    @inbounds for (reg_id, cv) in ref(ss, :control_valve)
+    @inbounds for (cv_id, cv) in ref(ss, :control_valve)
         eqn_no = cv[:dof] 
-        ctr, cv_val = control(ss, :control_valve, reg_id)
+        ctr, cv_val = control(ss, :control_valve, cv_id)
         to_node = cv["to_node"]
         fr_node = cv["fr_node"]
         eqn_to = ref(ss, :node, to_node, :dof)
