@@ -7,6 +7,7 @@ function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_
     _eval_pipe_equations!(ss, x_dof, residual_dof)
     _eval_compressor_equations!(ss, x_dof, residual_dof)
     _eval_control_valve_equations!(ss, x_dof, residual_dof)
+    _eval_pass_through_equations!(ss, x_dof, residual_dof)
 end
 
 """function assembles the Jacobians"""
@@ -16,6 +17,7 @@ function assemble_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArr
     _eval_pipe_equations_mat!(ss, x_dof, J)
     _eval_compressor_equations_mat!(ss, x_dof, J)
     _eval_control_valve_equations_mat!(ss, x_dof, J)
+    _eval_pass_through_equations_mat!(ss, x_dof, J)
 end
 
 """residual computation for junctions"""
@@ -95,11 +97,24 @@ function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArra
             residual_dof[eqn_no] = x_dof[eqn_no] - cv_val
         elseif ctr == discharge_pressure_control
             to_node = comp["to_node"]
-            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node,:dof)] - cmpr_val
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node,:dof)] - cv_val
         end
     end
 end
 
+"""residual computation for pass through components"""
+function _eval_pass_through_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
+    components = [:valve, :resistor, :loss_resistor, :short_pipe]
+    @inbounds for component in components 
+        (!haskey(ref(ss), component)) && (continue)
+        for (_, comp) in ref(ss, component)
+            eqn_no = comp[:dof]
+            fr_node = comp["fr_node"]
+            to_node = comp["to_node"]
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, :dof)] - x_dof[ref(ss, :node, fr_node,:dof)]
+        end 
+    end 
+end 
 
 """in place Jacobian computation for junctions"""
 function _eval_junction_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
@@ -199,3 +214,22 @@ function _eval_control_valve_equations_mat!(ss::SteadySimulator, x_dof::Abstract
         end
     end
 end
+
+"""in place Jacobian computation for pass through components"""
+function _eval_pass_through_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
+        J::AbstractArray)
+    components = [:valve, :resistor, :loss_resistor, :short_pipe]
+    @inbounds for component in components 
+        (!haskey(ref(ss), component)) && (continue)
+        for (_, comp) in ref(ss, component)
+            eqn_no = comp[:dof]
+            to_node = comp["to_node"]
+            fr_node = comp["fr_node"]
+            eqn_to = ref(ss, :node, to_node, :dof)
+            eqn_fr = ref(ss, :node, fr_node, :dof)
+
+            J[eqn_no, eqn_to] = 1 
+            J[eqn_no, eqn_fr] = (1.0) 
+        end 
+    end 
+end 

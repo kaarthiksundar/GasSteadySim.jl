@@ -36,7 +36,7 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
             ctrl_type, val = control(ss, :compressor, local_id)
             ref(ss, sym, local_id)["control_type"] = ctrl_type
             to_node = ref(ss, sym, local_id)["to_node"]
-            fr_node = ref(ss, sym, local_id)["fr_knode"]
+            fr_node = ref(ss, sym, local_id)["fr_node"]
             ref(ss, sym, local_id)["discharge_pressure"] =  x_dof[ref(ss, :node, to_node, :dof)]
             ref(ss, sym, local_id)["c_ratio"] = x_dof[ref(ss, :node, to_node, :dof)]/x_dof[ref(ss, :node, fr_node, :dof)]    
             if x_dof[i] < 0 && ref(ss, sym, local_id)["c_ratio"] > 1.0
@@ -101,9 +101,11 @@ function populate_solution!(ss::SteadySimulator)
         end 
     end 
 
-    for i in bc["control_valve_status"]["off"]
-        sol["control_valve_flow"][i] = 0.0
-    end 
+    if haskey(ref(ss), :control_valve)
+        for i in bc[:control_valve_status][:off]
+            sol["control_valve_flow"][i] = 0.0
+        end 
+    end
 
     if haskey(ref(ss), :valve)
         for i in collect(keys(ref(ss, :valve)))
@@ -111,9 +113,11 @@ function populate_solution!(ss::SteadySimulator)
         end 
     end 
 
-    for i in bc["valve_status"]["off"]
-        sol["valve_flow"][i] = 0.0
-    end 
+    if haskey(ref(ss), :valve)
+        for i in bc[:valve_status][:off]
+            sol["valve_flow"][i] = 0.0
+        end 
+    end
 
     if haskey(ref(ss), :resistor)
         for i in collect(keys(ref(ss, :resistor)))
