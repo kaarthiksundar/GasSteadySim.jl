@@ -36,7 +36,7 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
             ctrl_type, val = control(ss, :compressor, local_id)
             ref(ss, sym, local_id)["control_type"] = ctrl_type
             to_node = ref(ss, sym, local_id)["to_node"]
-            fr_node = ref(ss, sym, local_id)["fr_node"]
+            fr_node = ref(ss, sym, local_id)["fr_knode"]
             ref(ss, sym, local_id)["discharge_pressure"] =  x_dof[ref(ss, :node, to_node, :dof)]
             ref(ss, sym, local_id)["c_ratio"] = x_dof[ref(ss, :node, to_node, :dof)]/x_dof[ref(ss, :node, fr_node, :dof)]    
             if x_dof[i] < 0 && ref(ss, sym, local_id)["c_ratio"] > 1.0
@@ -53,13 +53,12 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
             ref(ss, sym, local_id)["discharge_pressure"] =  x_dof[ref(ss, :node, to_node, :dof)]
             ref(ss, sym, local_id)["c_ratio"] = x_dof[ref(ss, :node, to_node, :dof)]/x_dof[ref(ss, :node, fr_node, :dof)] 
         end 
-        
+
         (sym == :valve) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
         (sym == :resistor) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
         (sym == :loss_resistor) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
         (sym == :short_pipe) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
-
-        
+  
     end
 
     return flow_direction, negative_flow_in_compressors
@@ -69,6 +68,7 @@ end
 function populate_solution!(ss::SteadySimulator)
     sol = ss.sol
     units = params(ss, :units)
+    bc = ss.boundary_conditions
 
     function pressure_convertor(pu) 
         (units == 0) && (return pu * nominal_values(ss, :pressure)) 
@@ -100,6 +100,39 @@ function populate_solution!(ss::SteadySimulator)
             sol["control_valve_flow"][i] = mass_flow_convertor(ref(ss, :control_valve, i, "flow"))
         end 
     end 
+
+    for i in bc["control_valve_status"]["off"]
+        sol["control_valve_flow"][i] = 0.0
+    end 
+
+    if haskey(ref(ss), :valve)
+        for i in collect(keys(ref(ss, :valve)))
+            sol["valve_flow"][i] = mass_flow_convertor(ref(ss, :valve, i, "flow"))
+        end 
+    end 
+
+    for i in bc["valve_status"]["off"]
+        sol["valve_flow"][i] = 0.0
+    end 
+
+    if haskey(ref(ss), :resistor)
+        for i in collect(keys(ref(ss, :resistor)))
+            sol["resistor_flow"][i] = mass_flow_convertor(ref(ss, :resistor, i, "flow"))
+        end 
+    end 
+
+    if haskey(ref(ss), :loss_resistor)
+        for i in collect(keys(ref(ss, :loss_resistor)))
+            sol["resistor_flow"][i] = mass_flow_convertor(ref(ss, :loss_resistor, i, "flow"))
+        end 
+    end 
+
+    if haskey(ref(ss), :short_pipe)
+        for i in collect(keys(ref(ss, :short_pipe)))
+            sol["short_pipe_flow"][i] = mass_flow_convertor(ref(ss, :short_pipe, i, "flow"))
+        end 
+    end 
+
 
     return
 end 
