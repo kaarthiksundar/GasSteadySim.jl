@@ -66,6 +66,10 @@ function _get_data_units(rescale_functions)::Dict{Symbol,Any}
         "max_flow" => rescale_mass_flow, 
     )
 
+    loss_resistor_units = Dict{String,Function}(
+        "p_loss" => rescale_pressure, 
+    )
+
     initial_pipe_flow_units = Dict{String,Function}(
         "pipe_flow" => rescale_mass_flow, 
     )
@@ -82,6 +86,22 @@ function _get_data_units(rescale_functions)::Dict{Symbol,Any}
         "control_valve_flow" => rescale_mass_flow
     )
 
+    initial_valve_flow_units = Dict{String,Function}(
+        "valve_flow" => rescale_mass_flow
+    )
+
+    initial_resistor_flow_units = Dict{String,Function}(
+        "resistor_flow" => rescale_mass_flow
+    )
+
+    initial_loss_resistor_flow_units = Dict{String,Function}(
+        "loss_resistor_flow" => rescale_mass_flow
+    )
+
+    initial_short_pipe_flow_units = Dict{String,Function}(
+        "short_pipe_resistor_flow" => rescale_mass_flow
+    )
+
     boundary_flow_units = Dict{String,Function}(
         "boundary_nonslack_flow" => rescale_mass_flow 
     )
@@ -93,9 +113,14 @@ function _get_data_units(rescale_functions)::Dict{Symbol,Any}
     units[:node_units] = node_units
     units[:pipe_units] = pipe_units
     units[:compressor_units] = compressor_units
+    units[:loss_resistor_units] = loss_resistor_units
     units[:initial_pipe_flow_units] = initial_pipe_flow_units
     units[:initial_compressor_flow_units] = initial_compressor_flow_units
     units[:initial_control_valve_flow_units] = initial_control_valve_flow_units
+    units[:initial_valve_flow_units] = initial_valve_flow_units
+    units[:initial_resistor_flow_units] = initial_resistor_flow_units
+    units[:initial_loss_resistor_flow_units] = initial_loss_resistor_flow_units
+    units[:initial_short_pipe_flow_units] = initial_short_pipe_flow_units
     units[:initial_node_pressure_units] = initial_node_pressure_units
     units[:boundary_flow_units] = boundary_flow_units 
     units[:boundary_pressure_units] = boundary_pressure_units
@@ -110,9 +135,14 @@ function _rescale_data!(data::Dict{String,Any},
     node_units = units[:node_units]
     pipe_units = units[:pipe_units]
     compressor_units = units[:compressor_units] 
+    loss_resistor_units = units[:loss_resistor_units]
     initial_pipe_flow_units = units[:initial_pipe_flow_units]
     initial_compressor_flow_units = units[:initial_compressor_flow_units]
     initial_control_valve_flow_units = units[:initial_control_valve_flow_units]
+    initial_valve_flow_units = units[:initial_valve_flow_units]
+    initial_resistor_flow_units = units[:initial_resistor_flow_units]
+    initial_loss_resistor_flow_units = units[:initial_loss_resistor_flow_units]
+    initial_short_pipe_flow_units = units[:initial_short_pipe_flow_units]
     initial_node_pressure_units = units[:initial_node_pressure_units]
     boundary_flow_units = units[:boundary_flow_units]
     boundary_pressure_units = units[:boundary_pressure_units]
@@ -151,7 +181,24 @@ function _rescale_data!(data::Dict{String,Any},
         end 
     end 
 
-    for (param, f) in merge(initial_node_pressure_units, initial_pipe_flow_units, initial_compressor_flow_units, initial_control_valve_flow_units)
+    for (_, resistor) in get(data, "loss_resistors", [])
+        for (param, f) in loss_resistor_units 
+            (!haskey(Dict(resistor), param)) && (continue)
+            value = resistor[param]
+            resistor[param] = f(value)
+        end 
+    end
+
+    initial_units = merge(initial_node_pressure_units, 
+        initial_pipe_flow_units, 
+        initial_compressor_flow_units,      
+        initial_control_valve_flow_units, 
+        initial_valve_flow_units, 
+        initial_resistor_flow_units, 
+        initial_loss_resistor_flow_units, 
+        initial_short_pipe_flow_units
+    )
+    for (param, f) in initial_units
         for (i, value) in get(data, param, [])
             data[param][i] = f(value)
         end 

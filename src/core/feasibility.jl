@@ -32,6 +32,7 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
     con = ss.constraints
     m = ss.feasibility_model
     b1, b2 = get_eos_coeffs(ss)
+    pass_through_components = [:valve, :resistor, :short_pipe, :loss_resistor]
 
     # state variables
     var[:p] = @variable(m, [i in keys(ref(ss, :node))], 
@@ -49,10 +50,16 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         base_name = "f_compressor") 
     if haskey(ref(ss), :control_valve)
         var[:f_control_valve] = @variable(m, [i in keys(ref(ss, :control_valve))], 
-            lower_bound = 0.0,
             base_name = "f_control_valve")
     end 
-
+    for component in pass_through_components
+        if haskey(ref(ss), component)
+            base_name = "f_" * string(component)
+            var[Symbol(base_name)] = @variable(m, [i in keys(ref(ss, component))], 
+                base_name = base_name)
+        end 
+    end 
+    
     # auxiliary variables 
     if (b2 == 0)
         var[:pi] = @variable(m, [i in keys(ref(ss, :node))], 
@@ -122,6 +129,18 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         for k in ref(ss, :incoming_control_valves, i)
             inflow += var[:f_control_valve][k]
         end 
+        for k in ref(ss, :incoming_valves, i)
+            inflow += var[:f_valve][k]
+        end 
+        for k in ref(ss, :incoming_resistors, i)
+            inflow += var[:f_resistor][k]
+        end 
+        for k in ref(ss, :incoming_loss_resistors, i)
+            inflow += var[:f_loss_resistor][k]
+        end
+        for k in ref(ss, :incoming_short_pipes, i)
+            inflow += var[:f_short_pipe][k]
+        end 
         for k in ref(ss, :outgoing_pipes, i)
             outflow += var[:f_pipe][k]
         end 
@@ -130,6 +149,18 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         end 
         for k in ref(ss, :outgoing_control_valves, i)
             outflow += var[:f_control_valve][k]
+        end 
+        for k in ref(ss, :outgoing_valves, i)
+            outflow += var[:f_valve][k]
+        end 
+        for k in ref(ss, :outgoing_resistors, i)
+            outflow += var[:f_resistor][k]
+        end 
+        for k in ref(ss, :outgoing_loss_resistors, i)
+            outflow += var[:f_loss_resistor][k]
+        end
+        for k in ref(ss, :outgoing_short_pipes, i)
+            outflow += var[:f_short_pipe][k]
         end 
         con[:node][i] = @constraint(m, inflow - outflow == 0)
     end 
@@ -170,6 +201,18 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
             end
         end 
     end
+
+    # pass-through components 
+    for component in pass_through_components
+        if haskey(ref(ss), component)
+            con[component] = Dict{Int,Any}()
+            for (i, comp) in ref(ss, component)
+                to_node = comp["to_node"]
+                fr_node = comp["fr_node"]
+                con[component][i] = @constraint(m, var[:p][fr_node] - var[:p][to_node] == 0)
+            end 
+        end 
+    end 
 
     # pipe constraints 
     con[:pipe] = Dict{Int,Any}()

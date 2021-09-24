@@ -27,7 +27,7 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
         end
 
         if sym == :pipe
-            ref(ss, sym, local_id)["mass_flow"] = x_dof[i]
+            ref(ss, sym, local_id)["flow"] = x_dof[i]
             (x_dof[i] < 0) && (flow_direction = false)
         end
 
@@ -43,6 +43,23 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
                 push!(negative_flow_in_compressors, local_id)
             end
         end
+
+        if sym == :control_valve 
+            ref(ss, sym, local_id)["flow"] = x_dof[i]
+            ctrl_type, val = control(ss, :compressor, local_id)
+            ref(ss, sym, local_id)["control_type"] = ctrl_type
+            to_node = ref(ss, sym, local_id)["to_node"]
+            fr_node = ref(ss, sym, local_id)["fr_node"]
+            ref(ss, sym, local_id)["discharge_pressure"] =  x_dof[ref(ss, :node, to_node, :dof)]
+            ref(ss, sym, local_id)["c_ratio"] = x_dof[ref(ss, :node, to_node, :dof)]/x_dof[ref(ss, :node, fr_node, :dof)] 
+        end 
+        
+        (sym == :valve) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
+        (sym == :resistor) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
+        (sym == :loss_resistor) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
+        (sym == :short_pipe) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
+
+        
     end
 
     return flow_direction, negative_flow_in_compressors
@@ -69,7 +86,7 @@ function populate_solution!(ss::SteadySimulator)
     end
 
     for i in collect(keys(ref(ss, :pipe)))
-        sol["pipe_flow"][i] = mass_flow_convertor(ref(ss, :pipe, i, "mass_flow"))
+        sol["pipe_flow"][i] = mass_flow_convertor(ref(ss, :pipe, i, "flow"))
     end
     
     if haskey(ref(ss), :compressor)

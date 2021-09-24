@@ -103,21 +103,16 @@ function _create_initial_guess_dof!(ss::SteadySimulator)::Array
     x_guess = 0.5 * ones(Float64, ndofs) 
     dofs_updated = 0
 
-    for (i, val) in get(ss.initial_guess, :node, [])
-        x_guess[ref(ss, :node, i, :dof)] = val
-        dofs_updated += 1
-    end
+    components = [:node, :pipe, :compressor, 
+        :control_valve, :valve, 
+        :resistor, :loss_resistor, :short_pipe]
 
-    for (i, val) in get(ss.initial_guess, :pipe, [])
-        x_guess[ref(ss, :pipe, i, :dof)] = val
-        dofs_updated += 1 
-    end
-
-    for (i, val) in get(ss.initial_guess, :compressor, [])
-        x_guess[ref(ss, :compressor, i, :dof)] = val
-        dofs_updated += 1
-    end
-    
+    for component in components 
+        for (i, val) in get(ss.initial_guess, component, [])
+            x_guess[ref(ss, component, i, :dof)] = val 
+            dofs_updated += 1
+        end 
+    end 
     return x_guess
 end
 

@@ -14,22 +14,29 @@ end
 function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal, feasibility_model=:milp)::SteadySimulator
     params, nominal_values = process_data!(data)
     make_per_unit!(data, params, nominal_values)
-    ref = build_ref(data, ref_extensions= [
+    bc = _build_bc(data)
+
+    ref = build_ref(data, bc, ref_extensions= [
         _add_pipe_info_at_nodes!,
         _add_compressor_info_at_nodes!,
         _add_control_valve_info_at_nodes!,
+        _add_valve_info_at_nodes!,
+        _add_resistor_info_at_nodes!,
+        _add_loss_resistor_info_at_nodes!,
+        _add_short_pipe_info_at_nodes!,
         _add_index_info!,
         _add_incident_dofs_info_at_nodes!
         ]
     )
+
+    ig = _build_ig(data) 
 
     ss = SteadySimulator(data,
         ref,
         _initialize_solution(data),
         nominal_values,
         params,
-        _build_ig(data),
-        _build_bc(data), 
+        ig, bc,
         JuMP.Model(),
         Dict(), Dict(),
         _get_eos(eos)...
