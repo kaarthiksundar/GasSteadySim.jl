@@ -46,7 +46,7 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
 
         if sym == :control_valve 
             ref(ss, sym, local_id)["flow"] = x_dof[i]
-            ctrl_type, val = control(ss, :compressor, local_id)
+            ctrl_type, val = control(ss, :control_valve, local_id)
             ref(ss, sym, local_id)["control_type"] = ctrl_type
             to_node = ref(ss, sym, local_id)["to_node"]
             fr_node = ref(ss, sym, local_id)["fr_node"]
