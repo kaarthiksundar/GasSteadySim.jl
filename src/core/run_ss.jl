@@ -8,7 +8,8 @@ end
 
 function run_simulator!(ss::SteadySimulator; 
     method::Symbol=:trust_region,
-    iteration_limit::Int64=2000)::SolverReturn
+    iteration_limit::Int64=2000, 
+    kwargs...)::SolverReturn
     
     x_guess = _create_initial_guess_dof!(ss)
     n = length(x_guess)
@@ -20,7 +21,7 @@ function run_simulator!(ss::SteadySimulator;
     assemble_mat!(ss, rand(n), J0)
     df = OnceDifferentiable(residual_fun!, Jacobian_fun!, rand(n), rand(n), J0)
 
-    t_first = @elapsed soln = nlsolve(df, x_guess; method = method, iterations = iteration_limit)
+    t_first = @elapsed soln = nlsolve(df, x_guess; method = method, iterations = iteration_limit, kwargs...)
 
     t_second = 0.0
     all_pressures_non_neg = check_for_negative_pressures(ss, soln.zero)
