@@ -51,7 +51,7 @@ function _build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
         )
     end 
 
-    for i in get(data, "boundary_valve", [])
+    for (i, value) in get(data, "boundary_valve", [])
         (i == "on") && (bc[:valve_status][:on] = value)
         (i == "off") && (bc[:valve_status][:off] = value)
     end
