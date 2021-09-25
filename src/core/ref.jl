@@ -94,7 +94,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == loss_resistor["resistor_id"]
+        @assert id == loss_resistor["loss_resistor_id"]
         ref[name][id]["id"] = id
         ref[name][id]["fr_node"] = loss_resistor["from_node"]
         ref[name][id]["to_node"] = loss_resistor["to_node"]
