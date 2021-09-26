@@ -11,7 +11,8 @@ function initialize_simulator(data_folder::AbstractString;
     return initialize_simulator(data; kwargs...)
 end
 
-function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal, feasibility_model=:milp)::SteadySimulator
+function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal, 
+    feasibility_model=:milp, num_partitions::Int=4)::SteadySimulator
     params, nominal_values = process_data!(data)
     make_per_unit!(data, params, nominal_values)
     bc = _build_bc(data)
@@ -42,6 +43,8 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal, feasib
         _get_eos(eos)...
     )
 
-    construct_feasibility_model!(ss, feasibility_model=feasibility_model)
+    construct_feasibility_model!(ss, 
+        feasibility_model=feasibility_model, 
+        num_partitions=num_partitions)
     return ss
 end
