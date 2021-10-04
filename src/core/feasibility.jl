@@ -83,7 +83,6 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         f = p -> (b1/2) * p^2 + (b2/3) * p^3
         f_dash = p -> b1 * p + b2 * p^2
         construct_univariate_relaxation!(m, f, var[:p][i], var[:pi][i], partition, milp; f_dash=f_dash)
-        end
     end 
 
     for (i, pipe) in ref(ss, :pipe)
