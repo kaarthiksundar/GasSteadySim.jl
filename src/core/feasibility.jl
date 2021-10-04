@@ -32,7 +32,6 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
     con = ss.constraints
     m = ss.feasibility_model
     b1, b2 = get_eos_coeffs(ss)
-    is_ideal = (b2 == 0)
     pass_through_components = [:valve, :resistor, :short_pipe, :loss_resistor]
 
     # state variables
@@ -106,6 +105,8 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         _, val = control(ss, :node, i)
         if node["is_slack"] == 1 
             con[:node_inputs][i] = @constraint(m, var[:p][i] == val) 
+            pi_val = (b1/2) * val^2 + (b2/3) * val^3
+            @constraint(m, var[:pi][i] == pi_val)
         else 
             con[:node_inputs][i] = @constraint(m, var[:w][i] == val)
         end 
@@ -215,7 +216,7 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         fr_node = pipe["fr_node"]  
         to_node = pipe["to_node"]
         c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
-        resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
+        resistance = pipe["friction_factor"] * pipe["length"] * c / (2.0 * pipe["diameter"] * pipe["area"]^2)
         con[:pipe][i] = @constraint(m, var[:pi][fr_node] - var[:pi][to_node] - var[:f_abs_f][i] * resistance == 0)
     end 
 
