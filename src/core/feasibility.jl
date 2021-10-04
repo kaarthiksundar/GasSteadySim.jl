@@ -196,11 +196,15 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
     # pass-through components 
     for component in pass_through_components
         if haskey(ref(ss), component)
-            con[component] = Dict{Int,Any}()
+            con[component] = Dict{Symbol,Any}(
+                :p => Dict{Int,Any}(),
+                :pi => Dict{Int,Any}()
+            )
             for (i, comp) in ref(ss, component)
                 to_node = comp["to_node"]
                 fr_node = comp["fr_node"]
-                con[component][i] = @constraint(m, var[:p][fr_node] - var[:p][to_node] == 0)
+                con[component][:p][i] = @constraint(m, var[:p][fr_node] - var[:p][to_node] == 0)
+                con[component][:pi][i] = @constraint(m, var[:pi][fr_node] - var[:pi][to_node] == 0)
             end 
         end 
     end 
