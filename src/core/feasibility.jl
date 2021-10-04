@@ -65,7 +65,7 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
     
     var[:pi] = @variable(m, [i in keys(ref(ss, :node))], 
         lower_bound = (b1/2) * ref(ss, :node, i, "min_pressure")^2 + (b2/3) * ref(ss, :node, i, "min_pressure")^3, 
-        upper_bound = (b1/2) * ref(ss, :node, i, "max_pressure")^2 + (b2/3) * ref(ss, :node, i, "max_pressure")^3
+        upper_bound = (b1/2) * ref(ss, :node, i, "max_pressure")^2 + (b2/3) * ref(ss, :node, i, "max_pressure")^3,
         base_name = "pi")
     var[:f_abs_f] = @variable(m, [i in keys(ref(ss, :pipe))], base_name = "f_abs_f")
 
