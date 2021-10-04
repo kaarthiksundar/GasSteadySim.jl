@@ -25,13 +25,14 @@ function add_flow_bounds_to_ref!(ss::SteadySimulator)
     end 
 end 
 
-function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Symbol=:milp, num_partitions::Int=4)
+function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Symbol=:milp, num_partitions::Int=2)
     milp = (feasibility_model == :milp) ? true : false
     add_flow_bounds_to_ref!(ss)
     var = ss.variables
     con = ss.constraints
     m = ss.feasibility_model
     b1, b2 = get_eos_coeffs(ss)
+    is_ideal = (b2 == 0)
     pass_through_components = [:valve, :resistor, :short_pipe, :loss_resistor]
 
     # state variables
@@ -61,7 +62,7 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
     end 
     
     # auxiliary variables 
-    if (b2 == 0)
+    if is_ideal
         var[:pi] = @variable(m, [i in keys(ref(ss, :node))], 
             lower_bound = (b1/2) * ref(ss, :node, i, "min_pressure")^2, 
             base_name = "pi_ideal")
@@ -83,7 +84,7 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         min_pressure = ref(ss, :node, i, "min_pressure") 
         max_pressure = ref(ss, :node, i, "max_pressure")
         partition = collect(range(min_pressure, max_pressure, length = num_partitions))
-        if (b2 == 0)
+        if is_ideal
             f = p -> (b1/2) * p^2
             f_dash = p -> b1 * p
             construct_univariate_relaxation!(m, f, var[:p][i], var[:pi][i], partition, milp; f_dash=f_dash)
