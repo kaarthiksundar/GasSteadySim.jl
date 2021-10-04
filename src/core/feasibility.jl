@@ -62,15 +62,11 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
     end 
     
     # auxiliary variables 
-    if is_ideal
-        var[:pi] = @variable(m, [i in keys(ref(ss, :node))], 
-            lower_bound = (b1/2) * ref(ss, :node, i, "min_pressure")^2, 
-            base_name = "pi_ideal")
-    else 
-        var[:pi] = @variable(m, [i in keys(ref(ss, :node))], 
-            lower_bound = (b1/2) * ref(ss, :node, i, "min_pressure")^2 + (b2/3) * ref(ss, :node, i, "min_pressure")^3, 
-            base_name = "p_non_ideal")
-    end 
+    
+    var[:pi] = @variable(m, [i in keys(ref(ss, :node))], 
+        lower_bound = (b1/2) * ref(ss, :node, i, "min_pressure")^2 + (b2/3) * ref(ss, :node, i, "min_pressure")^3, 
+        upper_bound = (b1/2) * ref(ss, :node, i, "max_pressure")^2 + (b2/3) * ref(ss, :node, i, "max_pressure")^3
+        base_name = "pi")
     var[:f_abs_f] = @variable(m, [i in keys(ref(ss, :pipe))], base_name = "f_abs_f")
 
     # relaxation constraints 
@@ -84,14 +80,9 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         min_pressure = ref(ss, :node, i, "min_pressure") 
         max_pressure = ref(ss, :node, i, "max_pressure")
         partition = collect(range(min_pressure, max_pressure, length = num_partitions))
-        if is_ideal
-            f = p -> (b1/2) * p^2
-            f_dash = p -> b1 * p
-            construct_univariate_relaxation!(m, f, var[:p][i], var[:pi][i], partition, milp; f_dash=f_dash)
-        else 
-            f = p -> (b1/2) * p^2 + (b2/3) * p^3
-            f_dash = p -> b1 * p + b2 * p^2
-            construct_univariate_relaxation!(m, f, var[:p][i], var[:pi][i], partition, milp; f_dash=f_dash)
+        f = p -> (b1/2) * p^2 + (b2/3) * p^3
+        f_dash = p -> b1 * p + b2 * p^2
+        construct_univariate_relaxation!(m, f, var[:p][i], var[:pi][i], partition, milp; f_dash=f_dash)
         end
     end 
 
