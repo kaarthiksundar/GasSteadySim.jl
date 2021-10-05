@@ -82,7 +82,7 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
         f = p -> (b1/2) * p^2 + (b2/3) * p^3
         f_dash = p -> b1 * p + b2 * p^2
         construct_univariate_relaxation!(m, f, var[:p][i], var[:pi][i], partition, milp; 
-            f_dash=f_dash, variable_pre_base_name="pi_${i}_")
+            f_dash=f_dash, variable_pre_base_name="pi_$i_")
     end 
 
     for (i, pipe) in ref(ss, :pipe)
@@ -96,7 +96,7 @@ function construct_feasibility_model!(ss::SteadySimulator; feasibility_model::Sy
             partition = collect(range(min_flow, max_flow, length = num_partitions))
         end 
         construct_univariate_relaxation!(m, a->a*abs(a), var[:f_pipe][i], var[:f_abs_f][i], partition, milp; 
-            f_dash=a->2*a*sign(a), variable_pre_base_name="f_abs_f_${i}_")
+            f_dash=a->2*a*sign(a), variable_pre_base_name="f_abs_f_$i_")
     end 
 
     # nodal constraints 
