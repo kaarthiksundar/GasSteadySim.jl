@@ -6,9 +6,6 @@ struct SteadySimulator
     params::Dict{Symbol,Any}
     initial_guess::Dict{Symbol,Any}
     boundary_conditions::Dict{Symbol,Any}
-    feasibility_model::JuMP.AbstractModel
-    variables::Dict{Symbol,Any}
-    constraints::Dict{Symbol,Any}
     pu_eos_coeffs::Function
     pu_pressure_to_pu_density::Function
     pu_density_to_pu_pressure::Function

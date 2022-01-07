@@ -27,7 +27,7 @@ function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, re
         ctrl_type, val = control(ss, :node, node_id) # val is withdrawal or pressure
 
         if ctrl_type == pressure_control
-            residual_dof[eqn_no] = x_dof[eqn_no] - val
+            residual_dof[eqn_no] = x_dof[eqn_no] - sqrt(val)
         end
 
         if  ctrl_type == flow_control
@@ -55,8 +55,8 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
         c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
 
         b1, b2 = get_eos_coeffs(ss)
-        pressure_sqr_diff = x_dof[ref(ss, :node, fr_node, :dof)]^2 - x_dof[ref(ss, :node, to_node, :dof)]^2
-        pressure_cube_diff = x_dof[ref(ss, :node, fr_node,:dof)]^3 - x_dof[ref(ss, :node, to_node,:dof)]^3
+        pressure_sqr_diff = x_dof[ref(ss, :node, fr_node, :dof)]^4 - x_dof[ref(ss, :node, to_node, :dof)]^4
+        pressure_cube_diff = x_dof[ref(ss, :node, fr_node,:dof)]^6 - x_dof[ref(ss, :node, to_node,:dof)]^6 
         resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
         residual_dof[eqn_no] = (b1/2) * pressure_sqr_diff + (b2/3) * pressure_cube_diff - f * abs(f) * resistance
     end
@@ -72,12 +72,12 @@ function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, 
         if ctr  == c_ratio_control
             to_node = comp["to_node"]
             fr_node = comp["fr_node"]
-            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, :dof)] - cmpr_val * x_dof[ref(ss, :node, fr_node,:dof)]
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, :dof)] - sqrt(cmpr_val) * x_dof[ref(ss, :node, fr_node,:dof)]
         elseif ctr == flow_control
             residual_dof[eqn_no] = x_dof[eqn_no] - cmpr_val
         elseif ctr == discharge_pressure_control
             to_node = comp["to_node"]
-            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node,:dof)] - cmpr_val
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node,:dof)] - sqrt(cmpr_val)
         end
     end
 end
@@ -92,12 +92,12 @@ function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArra
         if ctr  == c_ratio_control
             to_node = cv["to_node"]
             fr_node = cv["fr_node"]
-            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, :dof)] - cv_val * x_dof[ref(ss, :node, fr_node,:dof)]
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, :dof)] - sqrt(cv_val) * x_dof[ref(ss, :node, fr_node,:dof)]
         elseif ctr == flow_control
             residual_dof[eqn_no] = x_dof[eqn_no] - cv_val
         elseif ctr == discharge_pressure_control
             to_node = comp["to_node"]
-            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node,:dof)] - cv_val
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node,:dof)] - sqrt(cv_val)
         end
     end
 end
@@ -111,7 +111,7 @@ function _eval_pass_through_equations!(ss::SteadySimulator, x_dof::AbstractArray
             eqn_no = comp[:dof]
             fr_node = comp["fr_node"]
             to_node = comp["to_node"]
-            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, :dof)] - x_dof[ref(ss, :node, fr_node,:dof)]
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, :dof)] - x_dof[ref(ss, :node, fr_node, :dof)]
         end 
     end 
 end 
@@ -152,15 +152,15 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
         to_node = pipe["to_node"]
         eqn_to = ref(ss, :node, to_node, :dof)
         eqn_fr = ref(ss, :node, fr_node, :dof)
-        p_fr = x_dof[eqn_fr]
-        p_to = x_dof[eqn_to]
+        x_fr = x_dof[eqn_fr]
+        x_to = x_dof[eqn_to]
         c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
 
 
         b1, b2 = get_eos_coeffs(ss)
         resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
-        var1 = b1 * p_fr + b2 * p_fr^2
-        var2 = -b1 * p_to - b2 * p_to^2
+        var1 = (b1/2) * 4 * x_fr^3 + (b2/3) * 6 * x_to^5
+        var2 = - (b1/2)* 4 * x_to^3 - (b2/3) * 6 * x_to^5
         var3 =  -2.0 * f * sign(f) * resistance
         
         J[eqn_no, eqn_fr] = var1
@@ -183,7 +183,7 @@ function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::AbstractArr
         
         if ctr  == c_ratio_control
             J[eqn_no, eqn_to] = 1
-            J[eqn_no, eqn_fr] = (-cmpr_val)
+            J[eqn_no, eqn_fr] = (-sqrt(cmpr_val))
         elseif ctr == flow_control
             J[eqn_no, eqn_no] = 1
         elseif ctr == discharge_pressure_control
@@ -206,7 +206,7 @@ function _eval_control_valve_equations_mat!(ss::SteadySimulator, x_dof::Abstract
         
         if ctr  == c_ratio_control
             J[eqn_no, eqn_to] = 1
-            J[eqn_no, eqn_fr] = (-cv_val)
+            J[eqn_no, eqn_fr] = (-sqrt(cv_val))
         elseif ctr == flow_control
             J[eqn_no, eqn_no] = 1
         elseif ctr == discharge_pressure_control
@@ -229,7 +229,7 @@ function _eval_pass_through_equations_mat!(ss::SteadySimulator, x_dof::AbstractA
             eqn_fr = ref(ss, :node, fr_node, :dof)
 
             J[eqn_no, eqn_to] = 1 
-            J[eqn_no, eqn_fr] = (1.0) 
+            J[eqn_no, eqn_fr] = 1.0 
         end 
     end 
 end 
