@@ -23,8 +23,10 @@ function _parse_data(data_folder::AbstractString;
 
     if isfile(ig_file)
         ig_data = parse_json(ig_file)
-        required_ig_fields = ["nodal_pressure", 
-        "pipe_flow", "compressor_flow"]
+        required_ig_fields = ["nodal_pressure", "pipe_flow", 
+            "compressor_flow", "control_valve_flow", 
+            "valve_flow", "resistor_flow", 
+            "loss_resistor_flow", "short_pipe_flow"]
         filter!(p -> p.first in required_ig_fields, ig_data)
         data = merge(network_data, params_data, bc_data, ig_data)
     else

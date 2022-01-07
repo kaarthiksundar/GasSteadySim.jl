@@ -1,14 +1,7 @@
-function is_feasible!(ss::SteadySimulator, optimizer)::Bool
-
-    set_optimizer(ss.feasibility_model, optimizer)
-    optimize!(ss.feasibility_model)
-    is_infeasible = (termination_status(ss.feasibility_model) == MOI.INFEASIBLE)
-    return !is_infeasible
-end
-
 function run_simulator!(ss::SteadySimulator; 
-    method::Symbol=:trust_region,
-    iteration_limit::Int64=2000)::SolverReturn
+    method::Symbol=:newton,
+    iteration_limit::Int64=2000, 
+    kwargs...)::SolverReturn
     
     x_guess = _create_initial_guess_dof!(ss)
     n = length(x_guess)
@@ -20,7 +13,7 @@ function run_simulator!(ss::SteadySimulator;
     assemble_mat!(ss, rand(n), J0)
     df = OnceDifferentiable(residual_fun!, Jacobian_fun!, rand(n), rand(n), J0)
 
-    t_first = @elapsed soln = nlsolve(df, x_guess; method = method, iterations = iteration_limit)
+    t_first = @elapsed soln = nlsolve(df, x_guess; method = method, iterations = iteration_limit, kwargs...)
 
     t_second = 0.0
     all_pressures_non_neg = check_for_negative_pressures(ss, soln.zero)
@@ -40,38 +33,38 @@ function run_simulator!(ss::SteadySimulator;
 
     iters_initial = soln.iterations
 
-    if all_pressures_non_neg == false
-        @info "correcting pressures..."
-        reinitialize_for_positive_pressure!(ss, soln.zero)
-        t_second = @elapsed soln = nlsolve(df, soln.zero; method = method, iterations = iteration_limit)
+    # if all_pressures_non_neg == false
+    #     @info "correcting pressures..."
+    #     reinitialize_for_positive_pressure!(ss, soln.zero)
+    #     t_second = @elapsed soln = nlsolve(df, soln.zero; method = method, iterations = iteration_limit)
         
-        all_pressures_non_neg = check_for_negative_pressures(ss, soln.zero)
-        convergence_state = converged(soln)
+    #     all_pressures_non_neg = check_for_negative_pressures(ss, soln.zero)
+    #     convergence_state = converged(soln)
 
-        if convergence_state == false
-            @warn "nonlinear solve for pressure correction failed!"
-            update_solution_fields_in_ref!(ss, soln.zero)
-            populate_solution!(ss)
-            return SolverReturn(pressure_correction_nl_solve_failure, 
-                iters_initial + soln.iterations, 
-                soln.residual_norm, 
-                t_first + t_second, 
-                soln.zero, Int[])
-        end
+    #     if convergence_state == false
+    #         @warn "nonlinear solve for pressure correction failed!"
+    #         update_solution_fields_in_ref!(ss, soln.zero)
+    #         populate_solution!(ss)
+    #         return SolverReturn(pressure_correction_nl_solve_failure, 
+    #             iters_initial + soln.iterations, 
+    #             soln.residual_norm, 
+    #             t_first + t_second, 
+    #             soln.zero, Int[])
+    #     end
 
-        if all_pressures_non_neg == false
-            @warn "pressure correction failed"
-            update_solution_fields_in_ref!(ss, soln.zero)
-            populate_solution!(ss)
-            return SolverReturn(pressure_correction_failure, 
-                iters_initial + soln.iterations, 
-                soln.residual_norm, 
-                t_first + t_second, 
-                soln.zero, Int[])
-        else 
-            @info "pressure correction successful"
-        end
-    end
+    #     if all_pressures_non_neg == false
+    #         @warn "pressure correction failed"
+    #         update_solution_fields_in_ref!(ss, soln.zero)
+    #         populate_solution!(ss)
+    #         return SolverReturn(pressure_correction_failure, 
+    #             iters_initial + soln.iterations, 
+    #             soln.residual_norm, 
+    #             t_first + t_second, 
+    #             soln.zero, Int[])
+    #     else 
+    #         @info "pressure correction successful"
+    #     end
+    # end
 
 
     flow_direction, negative_flow_in_compressors = update_solution_fields_in_ref!(ss, soln.zero)
@@ -103,27 +96,22 @@ function _create_initial_guess_dof!(ss::SteadySimulator)::Array
     x_guess = 0.5 * ones(Float64, ndofs) 
     dofs_updated = 0
 
-    for (i, val) in get(ss.initial_guess, :node, [])
-        x_guess[ref(ss, :node, i, :dof)] = val
-        dofs_updated += 1
-    end
+    components = [:node, :pipe, :compressor, 
+        :control_valve, :valve, 
+        :resistor, :loss_resistor, :short_pipe]
 
-    for (i, val) in get(ss.initial_guess, :pipe, [])
-        x_guess[ref(ss, :pipe, i, :dof)] = val
-        dofs_updated += 1 
-    end
-
-    for (i, val) in get(ss.initial_guess, :compressor, [])
-        x_guess[ref(ss, :compressor, i, :dof)] = val
-        dofs_updated += 1
-    end
-    
+    for component in components 
+        for (i, val) in get(ss.initial_guess, component, [])
+            x_guess[ref(ss, component, i, :dof)] = val 
+            dofs_updated += 1
+        end 
+    end 
     return x_guess
 end
 
 function check_for_negative_pressures(ss::SteadySimulator, soln_vec::Array)::Bool
     for (i, _) in ref(ss, :node)
-        if  soln_vec[ref(ss, :node, i, :dof)] < 0
+        if  soln_vec[ref(ss, :node, i, :dof)]^2 < 0
             return false
         end
     end
