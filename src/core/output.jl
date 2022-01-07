@@ -16,8 +16,8 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
     for i = 1: length(x_dof)
         sym, local_id = ref(ss, :dof, i)
         if sym == :node
-            ref(ss, sym, local_id)["pressure"] = x_dof[i]^2
-            ref(ss, sym, local_id)["density"] = get_density(ss, x_dof[i]^2)
+            ref(ss, sym, local_id)["pressure"] = x_dof[i]
+            ref(ss, sym, local_id)["density"] = get_density(ss, x_dof[i])
             ctrl_type, val = control(ss, :node, local_id)
             if ctrl_type == flow_control
                 ref(ss, sym, local_id)["withdrawal"] = val
@@ -37,8 +37,8 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
             ref(ss, sym, local_id)["control_type"] = ctrl_type
             to_node = ref(ss, sym, local_id)["to_node"]
             fr_node = ref(ss, sym, local_id)["fr_node"]
-            ref(ss, sym, local_id)["discharge_pressure"] = x_dof[ref(ss, :node, to_node, :dof)]^2
-            ref(ss, sym, local_id)["c_ratio"] = x_dof[ref(ss, :node, to_node, :dof)]^2/x_dof[ref(ss, :node, fr_node, :dof)]^2  
+            ref(ss, sym, local_id)["discharge_pressure"] = x_dof[ref(ss, :node, to_node, :dof)]
+            ref(ss, sym, local_id)["c_ratio"] = x_dof[ref(ss, :node, to_node, :dof)]/x_dof[ref(ss, :node, fr_node, :dof)]  
             if x_dof[i] < 0 && ref(ss, sym, local_id)["c_ratio"] > 1.0
                 push!(negative_flow_in_compressors, local_id)
             end
@@ -50,8 +50,8 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
             ref(ss, sym, local_id)["control_type"] = ctrl_type
             to_node = ref(ss, sym, local_id)["to_node"]
             fr_node = ref(ss, sym, local_id)["fr_node"]
-            ref(ss, sym, local_id)["discharge_pressure"] =  x_dof[ref(ss, :node, to_node, :dof)]^2
-            ref(ss, sym, local_id)["c_ratio"] = x_dof[ref(ss, :node, to_node, :dof)]^2/x_dof[ref(ss, :node, fr_node, :dof)]^2
+            ref(ss, sym, local_id)["discharge_pressure"] =  x_dof[ref(ss, :node, to_node, :dof)]
+            ref(ss, sym, local_id)["c_ratio"] = x_dof[ref(ss, :node, to_node, :dof)]/x_dof[ref(ss, :node, fr_node, :dof)]
         end 
 
         (sym == :valve) && (ref(ss, sym, local_id)["flow"] = x_dof[i])

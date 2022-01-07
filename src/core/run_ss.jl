@@ -33,38 +33,38 @@ function run_simulator!(ss::SteadySimulator;
 
     iters_initial = soln.iterations
 
-    # if all_pressures_non_neg == false
-    #     @info "correcting pressures..."
-    #     reinitialize_for_positive_pressure!(ss, soln.zero)
-    #     t_second = @elapsed soln = nlsolve(df, soln.zero; method = method, iterations = iteration_limit)
+    if all_pressures_non_neg == false
+        @info "correcting pressures..."
+        reinitialize_for_positive_pressure!(ss, soln.zero)
+        t_second = @elapsed soln = nlsolve(df, soln.zero; method = method, iterations = iteration_limit)
         
-    #     all_pressures_non_neg = check_for_negative_pressures(ss, soln.zero)
-    #     convergence_state = converged(soln)
+        all_pressures_non_neg = check_for_negative_pressures(ss, soln.zero)
+        convergence_state = converged(soln)
 
-    #     if convergence_state == false
-    #         @warn "nonlinear solve for pressure correction failed!"
-    #         update_solution_fields_in_ref!(ss, soln.zero)
-    #         populate_solution!(ss)
-    #         return SolverReturn(pressure_correction_nl_solve_failure, 
-    #             iters_initial + soln.iterations, 
-    #             soln.residual_norm, 
-    #             t_first + t_second, 
-    #             soln.zero, Int[])
-    #     end
+        if convergence_state == false
+            @warn "nonlinear solve for pressure correction failed!"
+            update_solution_fields_in_ref!(ss, soln.zero)
+            populate_solution!(ss)
+            return SolverReturn(pressure_correction_nl_solve_failure, 
+                iters_initial + soln.iterations, 
+                soln.residual_norm, 
+                t_first + t_second, 
+                soln.zero, Int[])
+        end
 
-    #     if all_pressures_non_neg == false
-    #         @warn "pressure correction failed"
-    #         update_solution_fields_in_ref!(ss, soln.zero)
-    #         populate_solution!(ss)
-    #         return SolverReturn(pressure_correction_failure, 
-    #             iters_initial + soln.iterations, 
-    #             soln.residual_norm, 
-    #             t_first + t_second, 
-    #             soln.zero, Int[])
-    #     else 
-    #         @info "pressure correction successful"
-    #     end
-    # end
+        if all_pressures_non_neg == false
+            @warn "pressure correction failed"
+            update_solution_fields_in_ref!(ss, soln.zero)
+            populate_solution!(ss)
+            return SolverReturn(pressure_correction_failure, 
+                iters_initial + soln.iterations, 
+                soln.residual_norm, 
+                t_first + t_second, 
+                soln.zero, Int[])
+        else 
+            @info "pressure correction successful"
+        end
+    end
 
 
     flow_direction, negative_flow_in_compressors = update_solution_fields_in_ref!(ss, soln.zero)
@@ -111,7 +111,7 @@ end
 
 function check_for_negative_pressures(ss::SteadySimulator, soln_vec::Array)::Bool
     for (i, _) in ref(ss, :node)
-        if  soln_vec[ref(ss, :node, i, :dof)]^2 < 0
+        if  soln_vec[ref(ss, :node, i, :dof)] < 0
             return false
         end
     end
