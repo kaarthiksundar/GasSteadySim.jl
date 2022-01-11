@@ -84,7 +84,7 @@ function run_simulator!(ss::SteadySimulator;
             soln.zero, negative_flow_in_compressors)
     end
 
-    return SolverReturn(successfull, 
+    return SolverReturn(successfull_after_pressure_correction, 
         iters_initial + soln.iterations, 
         soln.residual_norm, 
         t_first + t_second, 

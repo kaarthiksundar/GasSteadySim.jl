@@ -95,10 +95,11 @@ end
 
 @enum SOLVER_STATUS begin 
     successfull = 0 
-    initial_nl_solve_failure = 1 
-    pressure_correction_nl_solve_failure = 2
-    pressure_correction_failure = 3 
-    compressor_flow_negative = 4
+    successfull_after_pressure_correction = 1
+    initial_nl_solve_failure = 2
+    pressure_correction_nl_solve_failure = 3
+    pressure_correction_failure = 4
+    compressor_flow_negative = 5
 end
 
 struct SolverReturn 
