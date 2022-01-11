@@ -18,9 +18,11 @@ function run_simulator!(ss::SteadySimulator;
     t_second = 0.0
     all_pressures_non_neg = check_for_negative_pressures(ss, soln.zero)
     convergence_state = converged(soln)
+    pressure_correction_performed = false 
 
     if convergence_state == false
         return SolverReturn(initial_nl_solve_failure, 
+            pressure_correction_performed,
             soln.iterations, 
             soln.residual_norm, 
             t_first + t_second, 
@@ -35,6 +37,7 @@ function run_simulator!(ss::SteadySimulator;
 
     if all_pressures_non_neg == false
         @info "correcting pressures..."
+        pressure_correction_performed = true 
         reinitialize_for_positive_pressure!(ss, soln.zero)
         t_second = @elapsed soln = nlsolve(df, soln.zero; method = method, iterations = iteration_limit)
         
@@ -46,6 +49,7 @@ function run_simulator!(ss::SteadySimulator;
             update_solution_fields_in_ref!(ss, soln.zero)
             populate_solution!(ss)
             return SolverReturn(pressure_correction_nl_solve_failure, 
+                pressure_correction_performed,
                 iters_initial + soln.iterations, 
                 soln.residual_norm, 
                 t_first + t_second, 
@@ -57,6 +61,7 @@ function run_simulator!(ss::SteadySimulator;
             update_solution_fields_in_ref!(ss, soln.zero)
             populate_solution!(ss)
             return SolverReturn(pressure_correction_failure, 
+                pressure_correction_performed,
                 iters_initial + soln.iterations, 
                 soln.residual_norm, 
                 t_first + t_second, 
@@ -78,13 +83,15 @@ function run_simulator!(ss::SteadySimulator;
     if length(negative_flow_in_compressors) > 0
         @warn "calculated flow direction is opposite to given direction in some compressor(s)"
         return SolverReturn(compressor_flow_negative, 
+            pressure_correction_performed,
             iters_initial + soln.iterations, 
             soln.residual_norm, 
             t_first + t_second, 
             soln.zero, negative_flow_in_compressors)
     end
 
-    return SolverReturn(successfull_after_pressure_correction, 
+    return SolverReturn(successfull, 
+        pressure_correction_performed,
         iters_initial + soln.iterations, 
         soln.residual_norm, 
         t_first + t_second, 
