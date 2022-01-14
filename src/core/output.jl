@@ -80,8 +80,13 @@ function populate_solution!(ss::SteadySimulator)
         (units == 0) && (return pu * nominal_values(ss, :mass_flow)) 
         return pu * nominal_values(ss, :mass_flow) * kgps_to_mmscfd
     end 
+
+    function density_convertor(pu)
+        return pu * nominal_values(ss, :density)
+    end 
     
-    for i in collect(keys(ref(ss, :node)))       
+    for i in collect(keys(ref(ss, :node)))     
+        sol["nodal_density"][i] = density_convertor(get_density(ss, ref(ss, :node, i, "pressure")))
         sol["nodal_pressure"][i] = pressure_convertor(ref(ss, :node, i, "pressure"))
     end
 
