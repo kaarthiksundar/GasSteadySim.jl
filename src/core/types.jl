@@ -95,14 +95,15 @@ end
 
 @enum SOLVER_STATUS begin 
     successfull = 0 
-    initial_nl_solve_failure = 1 
+    initial_nl_solve_failure = 1
     pressure_correction_nl_solve_failure = 2
-    pressure_correction_failure = 3 
+    pressure_correction_failure = 3
     compressor_flow_negative = 4
 end
 
 struct SolverReturn 
     status::SOLVER_STATUS
+    pressure_correction_performed::Bool
     iterations::Int 
     residual_norm::Float64 
     time::Float64 
