@@ -11,8 +11,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["pressure"] = NaN
         ref[name][id]["density"] = NaN 
         ref[name][id]["withdrawal"] = NaN
-        ref[name][id]["min_pressure"] = node["min_pressure"]
-        ref[name][id]["max_pressure"] = node["max_pressure"]
+        ref[name][id]["potential"] = NaN
     end
 
     for (i, pipe) in get(data, "pipes", [])
@@ -122,49 +121,49 @@ function _add_index_info!(ref::Dict{Symbol, Any}, data::Dict{String, Any})
     ref[:dof] = Dict{Int64, Any}()
     
     for (i, node) in ref[:node]
-        node[:dof] = dofid
+        node["dof"] = dofid
         ref[:dof][dofid] = (:node, i)
         dofid += 1
     end
 
     for (i, pipe) in ref[:pipe]
-        pipe[:dof] = dofid
+        pipe["dof"] = dofid
         ref[:dof][dofid] = (:pipe, i)
         dofid += 1
     end
 
     for (i, compressor) in get(ref, :compressor, [])
-        compressor[:dof] = dofid
+        compressor["dof"] = dofid
         ref[:dof][dofid] = (:compressor, i)
         dofid += 1
     end
 
     for (i, control_valve) in get(ref, :control_valve, [])
-        control_valve[:dof] = dofid
+        control_valve["dof"] = dofid
         ref[:dof][dofid] = (:control_valve, i)
         dofid += 1
     end
 
     for (i, valve) in get(ref, :valve, [])
-        valve[:dof] = dofid
+        valve["dof"] = dofid
         ref[:dof][dofid] = (:valve, i)
         dofid += 1
     end
 
     for (i, resistor) in get(ref, :resistor, [])
-        resistor[:dof] = dofid
+        resistor["dof"] = dofid
         ref[:dof][dofid] = (:resistor, i)
         dofid += 1
     end
 
     for (i, loss_resistor) in get(ref, :loss_resistor, [])
-        loss_resistor[:dof] = dofid
+        loss_resistor["dof"] = dofid
         ref[:dof][dofid] = (:loss_resistor, i)
         dofid += 1
     end
 
     for (i, short_pipe) in get(ref, :short_pipe, [])
-        short_pipe[:dof] = dofid
+        short_pipe["dof"] = dofid
         ref[:dof][dofid] = (:short_pipe, i)
         dofid += 1
     end
@@ -180,38 +179,38 @@ function _add_incident_dofs_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{Str
     end
 
     for (_, pipe) in ref[:pipe]
-        push!(ref[:incoming_dofs][pipe["to_node"]], pipe[:dof])
-        push!(ref[:outgoing_dofs][pipe["fr_node"]], pipe[:dof])
+        push!(ref[:incoming_dofs][pipe["to_node"]], pipe["dof"])
+        push!(ref[:outgoing_dofs][pipe["fr_node"]], pipe["dof"])
     end
 
     for (_, compressor) in get(ref, :compressor, [])
-        push!(ref[:incoming_dofs][compressor["to_node"]], compressor[:dof])
-        push!(ref[:outgoing_dofs][compressor["fr_node"]], compressor[:dof])
+        push!(ref[:incoming_dofs][compressor["to_node"]], compressor["dof"])
+        push!(ref[:outgoing_dofs][compressor["fr_node"]], compressor["dof"])
     end
 
     for (_, control_valve) in get(ref, :control_valve, [])
-        push!(ref[:incoming_dofs][control_valve["to_node"]], control_valve[:dof])
-        push!(ref[:outgoing_dofs][control_valve["fr_node"]], control_valve[:dof])
+        push!(ref[:incoming_dofs][control_valve["to_node"]], control_valve["dof"])
+        push!(ref[:outgoing_dofs][control_valve["fr_node"]], control_valve["dof"])
     end
 
     for (_, valve) in get(ref, :valve, [])
-        push!(ref[:incoming_dofs][valve["to_node"]], valve[:dof])
-        push!(ref[:outgoing_dofs][valve["fr_node"]], valve[:dof])
+        push!(ref[:incoming_dofs][valve["to_node"]], valve["dof"])
+        push!(ref[:outgoing_dofs][valve["fr_node"]], valve["dof"])
     end
 
     for (_, resistor) in get(ref, :resistor, [])
-        push!(ref[:incoming_dofs][resistor["to_node"]], resistor[:dof])
-        push!(ref[:outgoing_dofs][resistor["fr_node"]], resistor[:dof])
+        push!(ref[:incoming_dofs][resistor["to_node"]], resistor["dof"])
+        push!(ref[:outgoing_dofs][resistor["fr_node"]], resistor["dof"])
     end
 
     for (_, loss_resistor) in get(ref, :loss_resistor, [])
-        push!(ref[:incoming_dofs][loss_resistor["to_node"]], loss_resistor[:dof])
-        push!(ref[:outgoing_dofs][loss_resistor["fr_node"]], loss_resistor[:dof])
+        push!(ref[:incoming_dofs][loss_resistor["to_node"]], loss_resistor["dof"])
+        push!(ref[:outgoing_dofs][loss_resistor["fr_node"]], loss_resistor["dof"])
     end
 
     for (_, short_pipe) in get(ref, :short_pipe, [])
-        push!(ref[:incoming_dofs][short_pipe["to_node"]], short_pipe[:dof])
-        push!(ref[:outgoing_dofs][short_pipe["fr_node"]], short_pipe[:dof])
+        push!(ref[:incoming_dofs][short_pipe["to_node"]], short_pipe["dof"])
+        push!(ref[:outgoing_dofs][short_pipe["fr_node"]], short_pipe["dof"])
     end
 
     return

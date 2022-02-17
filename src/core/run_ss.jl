@@ -109,7 +109,7 @@ function _create_initial_guess_dof!(ss::SteadySimulator)::Array
 
     for component in components 
         for (i, val) in get(ss.initial_guess, component, [])
-            x_guess[ref(ss, component, i, :dof)] = val 
+            x_guess[ref(ss, component, i, "dof")] = val 
             dofs_updated += 1
         end 
     end 
@@ -118,7 +118,7 @@ end
 
 function check_for_negative_pressures(ss::SteadySimulator, soln_vec::Array)::Bool
     for (i, _) in ref(ss, :node)
-        if  soln_vec[ref(ss, :node, i, :dof)] < 0
+        if  soln_vec[ref(ss, :node, i, "dof")] < 0
             return false
         end
     end
@@ -127,9 +127,9 @@ end
 
 function reinitialize_for_positive_pressure!(ss::SteadySimulator, soln_vec::Array)
     for (i, _) in ref(ss, :node)
-        val = soln_vec[ref(ss, :node, i, :dof)]
+        val = soln_vec[ref(ss, :node, i, "dof")]
         if  val < 0
-            soln_vec[ref(ss, :node, i, :dof)] = abs(val)
+            soln_vec[ref(ss, :node, i, "dof")] = abs(val)
         end
     end
 end
