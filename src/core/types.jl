@@ -97,8 +97,9 @@ end
     successfull = 0 
     initial_nl_solve_failure = 1
     pressure_correction_nl_solve_failure = 2
-    pressure_correction_failure = 3
-    compressor_flow_negative = 4
+    pressure_hypothesis_not_satisfied = 3
+    compressor_flow_infeasibility = 4
+    slack_pressure_infeasibility = 5
 end
 
 struct SolverReturn 

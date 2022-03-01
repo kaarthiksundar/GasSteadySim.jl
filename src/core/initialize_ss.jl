@@ -40,7 +40,7 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         _get_eos(eos)...
     )
 
-    _add_flow_bounds_to_ref!(ss)
+    # _add_flow_bounds_to_ref!(ss)
 
     return ss
 end
