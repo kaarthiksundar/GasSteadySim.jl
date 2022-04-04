@@ -5,6 +5,21 @@ function run_simulator!(ss::SteadySimulator;
     
     x_guess = _create_initial_guess_dof!(ss)
     n = length(x_guess)
+
+    contraction_factor = 1e-1
+    r_dof =  zeros(Float64, n) 
+    residual_fun_fixed_point! = (r_dof, x_dof) -> assemble_residual_fixed_point_iteration!(ss, x_dof, r_dof, contraction_factor)
+    for iter = 1:10
+        residual_fun_fixed_point!(r_dof, x_guess)
+        # println(x_guess, "\n", r_dof, "\n", norm(r_dof - x_guess), "\n")
+        println(norm(r_dof - x_guess), "\n")
+
+        for i =1:n
+            x_guess[i] = r_dof[i]
+        end
+    end
+    println(x_guess, "\n")
+    return SolverReturn(successfull, 4, norm(r_dof), 0.001, x_guess, Int[])
     
 
     residual_fun! = (r_dof, x_dof) -> assemble_residual!(ss, x_dof, r_dof)
