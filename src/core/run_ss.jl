@@ -94,6 +94,7 @@ function run_simulator!(ss::SteadySimulator;
         end
     end
 
+    populate_solution!(ss)
     return SolverReturn(successfull, 
         pressure_correction_performed,
         iters_initial + soln.iterations, 
