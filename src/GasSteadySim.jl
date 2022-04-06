@@ -4,6 +4,7 @@ import JSON
 using NLsolve
 using SparseArrays
 using LineSearches
+using LinearAlgebra
 
 include("io/json.jl")
 include("io/data_utils.jl")
