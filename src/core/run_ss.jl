@@ -128,6 +128,7 @@ function _check_pressure_hypothesis(ss::SteadySimulator, soln_vec::Array)::Bool
     for (_, compressor) in ref(ss, :compressor)
         fr_node = compressor["fr_node"]
         to_node = compressor["to_node"]
+        
         fr_p = soln_vec[ref(ss, :node, fr_node, "dof")]
         to_p = soln_vec[ref(ss, :node, to_node, "dof")]
         fr = (lb == 0.0) ? (fr_p < 0.0) : (fr_p > lb && fr_p < 0.0)
