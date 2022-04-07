@@ -328,6 +328,18 @@ function _add_short_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String
     return
 end
 
+function _add_nodes_incident_on_compressors!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+    ref[:is_pressure_node] = Dict{Int64,Bool}(
+        i => false for i in keys(ref[:node])
+    )
+
+    for (_, compressor) in get(ref, :compressor, [])
+        ref[:is_pressure_node][compressor["to_node"]] = true 
+        ref[:is_pressure_node][compressor["fr_node"]] = true 
+    end
+
+end 
+
 
 function build_ref(data::Dict{String,Any}, bc::Dict{Symbol,Any};
     ref_extensions=[])::Dict{Symbol,Any}

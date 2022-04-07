@@ -25,7 +25,8 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         _add_loss_resistor_info_at_nodes!,
         _add_short_pipe_info_at_nodes!,
         _add_index_info!,
-        _add_incident_dofs_info_at_nodes!
+        _add_incident_dofs_info_at_nodes!,
+        _add_nodes_incident_on_compressors!
         ]
     )
 
@@ -40,7 +41,17 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         _get_eos(eos)...
     )
 
-    # _add_flow_bounds_to_ref!(ss)
+    if eos==:ideal
+        _correct_node_flag!(ss)
+    end
 
     return ss
+end
+
+
+function _correct_node_flag!(ss::SteadySimulator)        
+    for (i, val) in ref(ss, :is_pressure_node)
+        ss.ref[:is_pressure_node][i] = false #error with ref(ss, :is_pressure_node, i) = false
+    end
+    return
 end
