@@ -34,8 +34,8 @@ function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, re
             r = (-val) # inflow is positive convention
             out_edge = ref(ss, :outgoing_dofs, node_id)
             in_edge = ref(ss, :incoming_dofs, node_id)
-            r -= sum(x_dof[e] for e in out_edge) 
-            r += sum(x_dof[e] for e in in_edge)
+            r -= sum(x_dof[e] for e in out_edge; init=0.0) 
+            r += sum(x_dof[e] for e in in_edge; init=0.0)
             residual_dof[eqn_no] = r
         end
     end
