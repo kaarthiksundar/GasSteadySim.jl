@@ -320,7 +320,7 @@ function _add_short_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String
     return
 end
 
-function _add_pressure_node_tag!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
+function _add_pressure_node_flag!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
     ref[:is_pressure_node] = Dict{Int64, Bool}(
         i => false for i in keys(ref[:node])
     )
@@ -331,9 +331,8 @@ function _add_pressure_node_tag!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
     end 
 end 
 
-function _update_ref_using_eos!(ref::Dict{Symbol,Any}, eos::Symbol)
-    (eos != :ideal) && (return)
-    for (i, _) in keys(ref[:is_pressure_node])
+function _update_node_flag!(ref::Dict{Symbol,Any})
+    for i in keys(ref[:is_pressure_node])
         ref[:is_pressure_node][i] = false
     end 
 end 

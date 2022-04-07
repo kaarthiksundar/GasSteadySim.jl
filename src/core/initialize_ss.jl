@@ -26,11 +26,11 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         _add_short_pipe_info_at_nodes!,
         _add_index_info!,
         _add_incident_dofs_info_at_nodes!, 
-        _add_pressure_node_tag!
+        _add_pressure_node_flag!
         ]
     )
     
-    _update_ref_using_eos!(ref, eos)
+    (eos == :ideal) && (_update_node_flag!(ref))
     
     ig = _build_ig(data) 
 

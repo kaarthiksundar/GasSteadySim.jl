@@ -25,14 +25,11 @@ function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, re
     @inbounds for (node_id, junction) in ref(ss, :node)
         eqn_no = junction["dof"]
         ctrl_type, val = control(ss, :node, node_id) # val is withdrawal or pressure
-        is_pressure_node = ref(ss, :is_pressure_node, node_id)
 
         if ctrl_type == pressure_control
-            if is_pressure_node
-                residual_dof[eqn_no] = x_dof[eqn_no] - val
-            else 
-                residual_dof[eqn_no] = x_dof[eqn_no] - get_potential(ss, val)
-            end
+            coeff = (ref(ss, :is_pressure_node, node_id)) ? val : get_potential(ss, val)
+            residual_dof[eqn_no] = x_dof[eqn_no] - coeff
+
         end
 
         if  ctrl_type == flow_control
@@ -72,31 +69,18 @@ function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, 
     @inbounds for (comp_id, comp) in ref(ss, :compressor)
         eqn_no = comp["dof"] 
         ctr, cmpr_val = control(ss, :compressor, comp_id)
+        to_node = comp["to_node"]
+        fr_node = comp["fr_node"]
         
         if ctr  == c_ratio_control
-            to_node = comp["to_node"]
-            fr_node = comp["fr_node"]
-            fr_dof = ref(ss, :node, fr_node, "dof")
-            to_dof = ref(ss, :node, to_node, "dof")
             is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
-            residual_dof[eqn_no] = 
-                if (is_pressure_eq)
-                    x_dof[to_dof] - cmpr_val * x_dof[fr_dof]
-                else 
-                    get_potential(ss, x_dof[to_dof]) - cmpr_val^2 * get_potential(ss, x_dof[fr_dof])
-                end 
+            val = (is_pressure_eq) ? cmpr_val : cmpr_val^2
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - val * x_dof[ref(ss, :node, fr_node, "dof")]
         elseif ctr == flow_control
             residual_dof[eqn_no] = x_dof[eqn_no] - cmpr_val
         elseif ctr == discharge_pressure_control
-            to_node = comp["to_node"]
-            to_dof = ref(ss, :node, to_node, "dof")
-            is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
-            residual_dof[eqn_no] = 
-                if is_to_pressure_node 
-                    x_dof[to_dof] - cmpr_val
-                else 
-                    get_potential(ss, x_dof[to_dof]) - get_potential(ss, cmpr_val)
-                end 
+            coeff = ref(ss, :is_pressure_node, to_node) ? cmpr_val : get_potetial(ss, cmpr_val)
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - coeff 
         end
     end
 end
@@ -107,31 +91,18 @@ function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArra
     @inbounds for (cv_id, cv) in ref(ss, :control_valve)
         eqn_no = cv["dof"] 
         ctr, cv_val = control(ss, :control_valve, cv_id)
+        to_node = cv["to_node"]
+        fr_node = cv["fr_node"]
         
         if ctr  == c_ratio_control
-            to_node = cv["to_node"]
-            fr_node = cv["fr_node"]
-            fr_dof = ref(ss, :node, fr_node, "dof")
-            to_dof = ref(ss, :node, to_node, "dof")
             is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
-            residual_dof[eqn_no] = 
-                if (is_pressure_eq)
-                    x_dof[to_dof] - cv_val * x_dof[fr_dof]
-                else 
-                    get_potential(ss, x_dof[to_dof]) - cv_val^2 * get_potential(ss, x_dof[fr_dof])
-                end 
+            val = (is_pressure_eq) ? cv_val : cv_val^2
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - val * x_dof[ref(ss, :node, fr_node, "dof")]
         elseif ctr == flow_control
             residual_dof[eqn_no] = x_dof[eqn_no] - cv_val
         elseif ctr == discharge_pressure_control
-            to_node = comp["to_node"]
-            to_dof = ref(ss, :node, to_node, "dof")
-            is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
-            residual_dof[eqn_no] = 
-                if is_to_pressure_node 
-                    x_dof[to_dof] - cv_val
-                else 
-                    get_potential(ss, x_dof[to_dof]) - get_potential(ss, cv_val)
-                end
+            coeff = ref(ss, :is_pressure_node, to_node) ? cv_val : get_potetial(ss, cv_val)
+            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - coeff
         end
     end
 end
@@ -149,10 +120,13 @@ function _eval_pass_through_equations!(ss::SteadySimulator, x_dof::AbstractArray
             to_dof = ref(ss, :node, to_node, "dof")
             is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
             is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
-            pi_fr = (is_fr_pressure_node) ? get_potential(ss, x_dof[fr_dof]) : x_dof[fr_dof] 
-            pi_to = (is_to_pressure_node) ? get_potential(ss, x_dof[to_dof]) : x_dof[to_dof] 
-            
-            residual_dof[eqn_no] = pi_to - pi_fr
+            if (is_fr_pressure_node && is_to_pressure_node)
+                residual_dof[eqn_no] = x_dof[to_dof] - x_dof[fr_dof]
+            else
+                pi_fr = (is_fr_pressure_node) ? get_potential(ss, x_dof[fr_dof]) : x_dof[fr_dof] 
+                pi_to = (is_to_pressure_node) ? get_potential(ss, x_dof[to_dof]) : x_dof[to_dof] 
+                residual_dof[eqn_no] = pi_to - pi_fr
+            end 
         end 
     end 
 end 
@@ -196,6 +170,7 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
         eqn_to = ref(ss, :node, to_node, "dof")
         is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
         is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
+        
         c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
         resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
 
@@ -270,11 +245,16 @@ function _eval_pass_through_equations_mat!(ss::SteadySimulator, x_dof::AbstractA
             eqn_fr = ref(ss, :node, fr_node, "dof")
             is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
             is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
-            pi_dash_fr = (is_fr_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_fr]) : 1.0 
-            pi_dash_to = (is_to_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_to]) : 1.0
 
-            J[eqn_no, eqn_to] = pi_dash_to
-            J[eqn_no, eqn_fr] = -pi_dash_fr
+            if (is_fr_pressure_node && is_to_pressure_node)
+                J[eqn_no, eqn_to] = 1.0
+                J[eqn_no, eqn_fr] = -1.0
+            else
+                pi_dash_fr = (is_fr_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_fr]) : 1.0 
+                pi_dash_to = (is_to_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_to]) : 1.0
+                J[eqn_no, eqn_to] = pi_dash_to
+                J[eqn_no, eqn_fr] = -pi_dash_fr
+            end 
         end 
     end 
 end 
