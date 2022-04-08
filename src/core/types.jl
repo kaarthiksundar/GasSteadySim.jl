@@ -59,7 +59,17 @@ get_eos_coeffs(ss::SteadySimulator) = ss.pu_eos_coeffs(nominal_values(ss), param
 get_pressure(ss::SteadySimulator, density) = ss.pu_density_to_pu_pressure(density, nominal_values(ss), params(ss))
 get_density(ss::SteadySimulator, pressure) = ss.pu_pressure_to_pu_density(pressure, nominal_values(ss), params(ss))
 
-TOL = 1.0e-5
+function get_potential(ss::SteadySimulator, pressure)
+    b1, b2 = get_eos_coeffs(ss)
+    return (b1/2) * pressure^2 + (b2/3) * pressure^3
+end 
+
+function get_potential_derivative(ss::SteadySimulator, pressure) 
+    b1, b2 = get_eos_coeffs(ss)
+    return b1 * pressure + b2 * pressure^2
+end 
+
+TOL = 1.0e-7
 
 function get_nodal_control(ss::SteadySimulator,
     id::Int64)::Tuple{CONTROL_TYPE,Float64}
@@ -94,20 +104,19 @@ end
 end
 
 @enum SOLVER_STATUS begin 
-    successfull = 0 
-    initial_nl_solve_failure = 1
-    pressure_correction_nl_solve_failure = 2
-    pressure_hypothesis_not_satisfied = 3
-    compressor_flow_infeasibility = 4
-    slack_pressure_infeasibility = 5
+    unique_physical_solution = 0 
+    nl_solve_failure = 1 
+    unique_unphysical_solution = 2 
+    unphysical_solution = 3
 end
 
 struct SolverReturn 
     status::SOLVER_STATUS
-    pressure_correction_performed::Bool
     iterations::Int 
     residual_norm::Float64 
     time::Float64 
     solution::Vector{Float64}
     negative_flow_in_compressors::Vector{Int64}
+    negative_potentials_in_nodes::Vector{Int64}
+    pressure_domain_not_satisfied_in_nodes::Vector{Int64}
 end 

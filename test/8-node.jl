@@ -4,7 +4,7 @@
     solver_return = run_simulator!(ss)
 
     @show solver_return.iterations
-    @test solver_return.status == successfull
+    @test solver_return.status == unique_physical_solution
     @test ref(ss, :node, 1, "withdrawal") * nominal_values(ss, :mass_flow) ≈ -275.00 atol = 1e-2
 end
 
@@ -14,7 +14,7 @@ end
     solver_return = run_simulator!(ss)
 
     @show solver_return.iterations
-    @test solver_return.status == successfull
+    @test solver_return.status == unique_physical_solution
     @test ref(ss, :node, 1, "withdrawal") * nominal_values(ss, :mass_flow) ≈ -275.00 atol = 1e-2
 end
 
@@ -25,6 +25,6 @@ end
     solver_return = run_simulator!(ss)
 
     @show solver_return.iterations
-    @test solver_return.status == successfull
+    @test solver_return.status == unique_physical_solution
     @test ref(ss, :node, 1, "withdrawal") * nominal_values(ss, :mass_flow) ≈ -275.00 atol = 1e-2
 end

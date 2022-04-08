@@ -1,3 +1,35 @@
+function find_ub(ss::SteadySimulator, val::Float64, ub::Float64)::Float64
+    @assert ub > 0
+    while get_potential(ss, ub) < val
+        ub = 1.5 * ub
+    end 
+    return ub
+end 
+
+function find_lb(ss::SteadySimulator, val::Float64, lb::Float64)::Float64
+    @assert lb < 0
+    while get_potential(ss, lb) > val
+        lb = 1.5 * lb
+    end 
+    return lb
+end 
+
+function bisect(ss::SteadySimulator, lb::Float64, ub::Float64, val::Float64)::Float64  
+    @assert ub > lb
+    mb = 1.0
+    while (ub - lb) > TOL
+        mb = (ub + lb) / 2.0
+        if get_potential(ss, mb) > val
+            ub = mb
+        else
+            lb = mb 
+        end
+    end
+    return mb
+end
+
+invert_positive_potential(ss::SteadySimulator, val::Float64) = bisect(ss, 0.0, find_ub(ss, val, 1.0), val)
+
 function calculate_slack_withdrawal(ss::SteadySimulator, id::Int, x_dof::Array)::Float64
     slack_withdrawal = 0.0
     for i in ref(ss, :incoming_dofs)[id]
@@ -10,20 +42,52 @@ function calculate_slack_withdrawal(ss::SteadySimulator, id::Int, x_dof::Array):
 end 
 
 
-function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
+function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::NamedTuple
     flow_direction = true
     negative_flow_in_compressors = Int[]
-    for i = 1: length(x_dof)
+    negative_nodal_potentials = Int[]
+    nodal_pressures_not_in_domain = Int[]
+
+    for i in 1:length(x_dof)
         sym, local_id = ref(ss, :dof, i)
         if sym == :node
-            ref(ss, sym, local_id)["pressure"] = x_dof[i]
-            ref(ss, sym, local_id)["density"] = get_density(ss, x_dof[i])
+            
             ctrl_type, val = control(ss, :node, local_id)
             if ctrl_type == flow_control
                 ref(ss, sym, local_id)["withdrawal"] = val
             elseif ctrl_type == pressure_control 
                 ref(ss, sym, local_id)["withdrawal"] = calculate_slack_withdrawal(ss, local_id, x_dof)
             end 
+
+            pi_val = (ref(ss, :is_pressure_node, local_id)) ? get_potential(ss, x_dof[i]) : x_dof[i] 
+            if (pi_val < 0)
+                push!(negative_nodal_potentials, local_id)
+                ref(ss, sym, local_id)["potential"] = pi_val 
+                ref(ss, sym, local_id)["pressure"] = NaN 
+                ref(ss, sym, local_id)["density"] = NaN
+                continue 
+            end
+
+            if (pi_val == 0.0)
+                ref(ss, sym, local_id)["potential"] = 0.0
+                ref(ss, sym, local_id)["pressure"] = 0.0
+                ref(ss, sym, local_id)["density"] = 0.0
+                continue
+            end 
+
+            p_val = (ref(ss, :is_pressure_node, local_id)) ? x_dof[i] : invert_positive_potential(ss, x_dof[i])
+
+            # pi_val > 0 is always true when we get to this point 
+            if (p_val < 0 && pi_val > 0)
+                push!(nodal_pressures_not_in_domain, local_id)
+                ref(ss, sym, local_id)["potential"] = pi_val 
+                ref(ss, sym, local_id)["pressure"] = NaN 
+                ref(ss, sym, local_id)["density"] = NaN
+            else  
+                ref(ss, sym, local_id)["potential"] = pi_val
+                ref(ss, sym, local_id)["pressure"] = p_val
+                ref(ss, sym, local_id)["density"] = get_density(ss, p_val)
+            end
         end
 
         if sym == :pipe
@@ -37,9 +101,9 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
             ref(ss, sym, local_id)["control_type"] = ctrl_type
             to_node = ref(ss, sym, local_id)["to_node"]
             fr_node = ref(ss, sym, local_id)["fr_node"]
-            ref(ss, sym, local_id)["discharge_pressure"] = x_dof[ref(ss, :node, to_node, "dof")]
+            ref(ss, sym, local_id)["discharge_pressure"] = ref(ss, :node, to_node)["pressure"]
             ref(ss, sym, local_id)["c_ratio"] = 
-                x_dof[ref(ss, :node, to_node, "dof")]/x_dof[ref(ss, :node, fr_node, "dof")]  
+                ref(ss, :node, to_node)["pressure"] / ref(ss, :node, fr_node)["pressure"]  
             if x_dof[i] < 0 && ref(ss, sym, local_id)["c_ratio"] > 1.0
                 push!(negative_flow_in_compressors, local_id)
             end
@@ -51,19 +115,23 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)
             ref(ss, sym, local_id)["control_type"] = ctrl_type
             to_node = ref(ss, sym, local_id)["to_node"]
             fr_node = ref(ss, sym, local_id)["fr_node"]
-            ref(ss, sym, local_id)["discharge_pressure"] =  x_dof[ref(ss, :node, to_node, "dof")]
+            ref(ss, sym, local_id)["discharge_pressure"] =  ref(ss, :node, to_node)["pressure"]
             ref(ss, sym, local_id)["c_ratio"] = 
-                x_dof[ref(ss, :node, to_node, "dof")]/x_dof[ref(ss, :node, fr_node, "dof")]
+                ref(ss, :node, to_node)["pressure"] / ref(ss, :node, fr_node)["pressure"] 
         end 
 
         (sym == :valve) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
         (sym == :resistor) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
         (sym == :loss_resistor) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
         (sym == :short_pipe) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
-  
     end
 
-    return flow_direction, negative_flow_in_compressors
+    return (
+            pipe_flow_dir = flow_direction, 
+            compressors_with_neg_flow = negative_flow_in_compressors, 
+            nodes_with_neg_potential = negative_nodal_potentials, 
+            nodes_with_pressure_not_in_domain = nodal_pressures_not_in_domain
+        )
 end
 
 
@@ -143,7 +211,5 @@ function populate_solution!(ss::SteadySimulator)
             sol["short_pipe_flow"][i] = mass_flow_convertor(ref(ss, :short_pipe, i, "flow"))
         end 
     end 
-
-
     return
 end 

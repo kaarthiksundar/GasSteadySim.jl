@@ -25,10 +25,13 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         _add_loss_resistor_info_at_nodes!,
         _add_short_pipe_info_at_nodes!,
         _add_index_info!,
-        _add_incident_dofs_info_at_nodes!
+        _add_incident_dofs_info_at_nodes!, 
+        _add_pressure_node_flag!
         ]
     )
-
+    
+    (eos == :ideal) && (_update_node_flag!(ref))
+    
     ig = _build_ig(data) 
 
     ss = SteadySimulator(data,
