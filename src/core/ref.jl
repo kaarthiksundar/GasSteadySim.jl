@@ -325,7 +325,7 @@ function _add_pressure_node_flag!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         i => false for i in keys(ref[:node])
     )
 
-    for (_, compressor) in ref[:compressor]
+    for (_, compressor) in get(ref, :compressor, [])
         ref[:is_pressure_node][compressor["fr_node"]] = true 
         ref[:is_pressure_node][compressor["to_node"]] = true
     end 
