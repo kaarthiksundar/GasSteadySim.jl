@@ -19,18 +19,13 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
     ref = build_ref(data, bc, ref_extensions= [
         _add_pipe_info_at_nodes!,
         _add_compressor_info_at_nodes!,
-        _add_control_valve_info_at_nodes!,
-        _add_valve_info_at_nodes!,
-        _add_resistor_info_at_nodes!,
-        _add_loss_resistor_info_at_nodes!,
-        _add_short_pipe_info_at_nodes!,
         _add_index_info!,
-        _add_incident_dofs_info_at_nodes!, 
-        _add_pressure_node_flag!
+        _add_incident_dofs_info_at_nodes!
         ]
     )
     
-    (eos == :ideal) && (_update_node_flag!(ref))
+    #can only be ideal so commenting out next line
+    # (eos == :ideal) && (_update_node_flag!(ref)) 
     
     ig = _build_ig(data) 
 
@@ -43,7 +38,6 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         _get_eos(eos)...
     )
 
-    # _add_flow_bounds_to_ref!(ss)
 
     return ss
 end
