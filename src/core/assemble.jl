@@ -2,14 +2,15 @@
 
 
 """function assembles the residuals"""
-function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_edges::AbstractArray, residual_nonslack::AbstractArray, A_ns::SparseArrays.SparseMatrixCSC, val_ns::AbstractArray)
+function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_edges::AbstractArray, residual_nonslack::AbstractArray, A_ns::SparseArrays.SparseMatrixCSC, val_ns::AbstractArray, W1::AbstractArray, W2::AbstractArray)
     num_ns =  ss.ref[:total_nonslack_vertices]
     num_edges = ss.ref[:total_edges]
 
     _eval_pipe_equations!(ss, x_dof, residual_edges)
     _eval_compressor_equations!(ss, x_dof, residual_edges)
     f_edges = x_dof[num_ns+1:end]
-    residual_nonslack = A_ns * f_edges + val_ns
+    residual_nonslack = W1 * A_ns * f_edges + val_ns
+    residual_edges = W2 * residual_edges
     return
 end
 
@@ -18,6 +19,8 @@ function assemble_mat(ss::SteadySimulator)
    
     num_ns =  ss.ref[:total_nonslack_vertices]
     num_edges = ss.ref[:total_edges]
+    num_slack = ss.ref[:total_slack_vertices]
+    A_slack = zeros(num_slack, num_edges)
 
     n =  2*length(ref(ss, :pipe)) + 2*length(ref(ss, :compressor)) # 2 entries for each edge
     i_vec, j_vec, k_vec, k_alpha_vec =  Vector{Int32}(), Vector{Int32}(), Vector{Float64}(), Vector{Float64}()
@@ -28,18 +31,19 @@ function assemble_mat(ss::SteadySimulator)
 
 
     # _eval_junction_equations_sparse_mat!(ss, x_dof, i_vec, j_vec, k_vec)
-    _eval_pipe_equations_sparse_mat!(ss, i_vec, j_vec, k_vec, k_alpha_vec)
-    _eval_compressor_equations_sparse_mat!(ss, i_vec, j_vec, k_vec, k_alpha_vec)
+    _eval_pipe_equations_sparse_mat!(ss, i_vec, j_vec, k_vec, k_alpha_vec, A_slack)
+    _eval_compressor_equations_sparse_mat!(ss, i_vec, j_vec, k_vec, k_alpha_vec, A_slack)
 
     # note we want ns x e edge incidence  which is transpose of vertex incidence hence jvec first
     A_ns = sparse(j_vec, i_vec, k_vec, num_ns, num_edges)
     A_alpha_ns = sparse(j_vec, i_vec, k_alpha_vec, num_ns, num_edges)
 
-    return A_ns, A_alpha_ns
+    return A_ns, A_alpha_ns, A_slack
 end
 
 """in place Jacobian computation for pipes"""
-function _eval_pipe_equations_sparse_mat!(ss::SteadySimulator, i_vec::Array, j_vec::Array, k_vec::Array, k_alpha_vec::Array)
+function _eval_pipe_equations_sparse_mat!(ss::SteadySimulator, i_vec::Array, j_vec::Array, k_vec::Array, 
+    k_alpha_vec::Array, A_slack::Array)
     @inbounds for (key, pipe) in ref(ss, :pipe)
         edge_dof = pipe["edge_dof"]  #shld be edge_id
         fr_node = pipe["fr_node"]  
@@ -51,6 +55,8 @@ function _eval_pipe_equations_sparse_mat!(ss::SteadySimulator, i_vec::Array, j_v
             push!(j_vec, ref(ss, :node, fr_node, "vertex_dof"))
             push!(k_vec, +1)
             push!(k_alpha_vec, +1)
+        else 
+            A_slack[abs(ref(ss, :node, fr_node, "vertex_dof")), edge_dof] = +1
         end
 
         if ref(ss, :node, to_node, "vertex_dof") > 0
@@ -58,13 +64,16 @@ function _eval_pipe_equations_sparse_mat!(ss::SteadySimulator, i_vec::Array, j_v
             push!(j_vec, ref(ss, :node, to_node, "vertex_dof"))
             push!(k_vec, -1)
             push!(k_alpha_vec, -1)
+        else
+            A_slack[abs(ref(ss, :node, to_node, "vertex_dof")), edge_dof] = -1
         end
 
     end
 end
 
 """in place Jacobian computation for compressors"""
-function _eval_compressor_equations_sparse_mat!(ss::SteadySimulator, i_vec::Array, j_vec::Array, k_vec::Array, k_alpha_vec::Array)
+function _eval_compressor_equations_sparse_mat!(ss::SteadySimulator, i_vec::Array, j_vec::Array, k_vec::Array, 
+    k_alpha_vec::Array, A_slack::Array)
     (!haskey(ref(ss), :compressor)) && (return)
     @inbounds for (comp_id, comp) in ref(ss, :compressor)
         edge_dof = comp["edge_dof"] 
@@ -77,6 +86,8 @@ function _eval_compressor_equations_sparse_mat!(ss::SteadySimulator, i_vec::Arra
             push!(j_vec, ref(ss, :node, fr_node, "vertex_dof"))
             push!(k_vec, +1)
             push!(k_alpha_vec, +1 * cmpr_val^2)
+        else
+            A_slack[abs(ref(ss, :node, fr_node, "vertex_dof")), edge_dof] = +1
         end
 
         if ref(ss, :node, to_node, "vertex_dof") > 0
@@ -84,6 +95,8 @@ function _eval_compressor_equations_sparse_mat!(ss::SteadySimulator, i_vec::Arra
             push!(j_vec, ref(ss, :node, to_node, "vertex_dof"))
             push!(k_vec, -1)
             push!(k_alpha_vec, -1)
+        else
+            A_slack[abs(ref(ss, :node, to_node, "vertex_dof")), edge_dof] = -1
         end
         
     end

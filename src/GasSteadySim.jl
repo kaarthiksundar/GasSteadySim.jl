@@ -5,6 +5,11 @@ using NLsolve
 using SparseArrays
 using LineSearches
 
+using Convex
+using SCS
+using LinearAlgebra
+
+
 include("io/json.jl")
 include("io/data_utils.jl")
 

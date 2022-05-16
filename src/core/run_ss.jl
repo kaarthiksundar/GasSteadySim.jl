@@ -4,18 +4,37 @@ function run_simulator!(ss::SteadySimulator;
     kwargs...)
     
 
-    A_ns, A_alpha_ns = assemble_mat(ss)
-    println(A_ns, "\n", A_alpha_ns)
+    ## Stage 1
+    A_ns, A_alpha_ns, A_slack = assemble_mat(ss)
+    println(A_ns, "\n", A_alpha_ns, "\n", A_slack)
 
     num_ns =  ss.ref[:total_nonslack_vertices]
     num_edges = ss.ref[:total_edges]
-    x_guess = ones(Float64, num_ns + num_edges)
+    # return A_ns, A_alpha_ns, num_ns, num_edges
 
+
+    ## Stage 2
+    x = Variable()
+    xmax = 1
+    y = Semidefinite(num_ns)
+    z = Semidefinite(num_edges)
+    # SDP constraints
+    p = minimize(-x, (y + x) * A_ns - A_alpha_ns * (z + x)   == zeros(num_ns, num_edges), 
+        x > 0,  x <= xmax, opnorm(y, 2) <= 10*xmax, opnorm(z, 2) <= 10*xmax )
+    solve!(p, SCS.Optimizer; silent_solver = false)
+    println(p.status)
+    W1 = evaluate(y)
+    W2= evaluate(z)
+
+
+    
+    # return p
+
+    ## Stage 3
+    ## next  block required to compute residual
     residual_nonslack = zeros(Float64, num_ns) 
     residual_edges = zeros(Float64, num_edges)
     val_ns = zeros(Float64, num_ns) 
-
-    
 
     @inbounds for (node_id, junction) in ref(ss, :node)
 
@@ -26,7 +45,22 @@ function run_simulator!(ss::SteadySimulator;
         val_ns[junction["vertex_dof"]] = -val
 
     end
-    assemble_residual!(ss, x_guess, residual_edges, residual_nonslack, A_ns, val_ns)
+
+    #here do VI soln algo in loop
+    x_k0 = ones(Float64, num_ns + num_edges)
+    for i = 1: 5
+        assemble_residual!(ss, x_k0, residual_edges, residual_nonslack, A_ns, val_ns, W1, W2)
+        x_int[1:num_ns] = x_k0[1:num_ns] - residual_nonslack/1000 
+        x_int[num_ns+1:num_ns+num_edges] = x_k0[num_ns:num_edges] - residual_edges/1000 
+        #
+        assemble_residual!(ss, x_int, residual_edges, residual_nonslack, A_ns, val_ns, W1, W2)
+        x_k0[1:num_ns] = x_k0[1:num_ns] - residual_nonslack/1000 
+        x_k0[num_ns+1:num_ns+num_edges] = x_k0[num_ns:num_edges] - residual_edges/1000 
+    end
+
+
+ 
+
 
     
 
@@ -87,6 +121,7 @@ function run_simulator!(ss::SteadySimulator;
     #     sol_return[:compressors_with_neg_flow], 
     #     sol_return[:nodes_with_neg_potential],
     #     sol_return[:nodes_with_pressure_not_in_domain])
+
 end
 
 # function _create_initial_guess_dof!(ss::SteadySimulator)::Array
