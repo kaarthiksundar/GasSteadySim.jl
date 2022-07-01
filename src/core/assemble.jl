@@ -2,27 +2,31 @@
 
 
 """function assembles the residuals"""
-function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_edges::AbstractArray, residual_nonslack::AbstractArray, A_ns::SparseArrays.SparseMatrixCSC, val_ns::AbstractArray, W1::AbstractArray, W2::AbstractArray)
-    num_ns =  ss.ref[:total_nonslack_vertices]
-    num_edges = ss.ref[:total_edges]
+function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_edges::AbstractArray, residual_nonslack::AbstractArray, 
+    A_ns::SparseArrays.SparseMatrixCSC, A_alpha_ns_transpose::SparseArrays.SparseMatrixCSC, A_slack::Array,
+    val_ns::Array, beta_vec::Array, pi_slack_vec::Array, W1::AbstractArray, W2::AbstractArray)
+    num_ns =  ss.new_ref[:total_nonslack_vertices]
+    num_edges = ss.new_ref[:total_edges]
 
-    _eval_pipe_equations!(ss, x_dof, residual_edges)
-    _eval_compressor_equations!(ss, x_dof, residual_edges)
+    pi_ns = x_dof[1:num_ns]
     f_edges = x_dof[num_ns+1:end]
-    residual_nonslack = W1 * A_ns * f_edges + val_ns
-    residual_edges = W2 * residual_edges
+    residual_nonslack .= W1 * (A_ns * f_edges + val_ns) #note the dot, else will not modify argument
+    residual_edges .= W2 * (A_alpha_ns_transpose * pi_ns + transpose(A_slack) * pi_slack_vec - beta_vec .* f_edges .* abs.(f_edges))
     return
 end
 
 """function assembles the Jacobians"""
 function assemble_mat(ss::SteadySimulator)
    
-    num_ns =  ss.ref[:total_nonslack_vertices]
-    num_edges = ss.ref[:total_edges]
-    num_slack = ss.ref[:total_slack_vertices]
+    num_ns =  ss.new_ref[:total_nonslack_vertices]
+    num_edges = ss.new_ref[:total_edges]
+    num_slack = ss.new_ref[:total_slack_vertices]
     A_slack = zeros(num_slack, num_edges)
+    beta_vec = zeros(num_edges)
+    val_ns = zeros(num_ns)
+    pi_slack_vec = zeros(num_slack)
 
-    n =  2*length(ref(ss, :pipe)) + 2*length(ref(ss, :compressor)) # 2 entries for each edge
+    n =  2*length(new_ref(ss, :pipe))  # 2 entries for each edge
     i_vec, j_vec, k_vec, k_alpha_vec =  Vector{Int32}(), Vector{Int32}(), Vector{Float64}(), Vector{Float64}()
     sizehint!(i_vec, n)
     sizehint!(j_vec, n)
@@ -30,140 +34,57 @@ function assemble_mat(ss::SteadySimulator)
     sizehint!(k_alpha_vec, n)
 
 
-    # _eval_junction_equations_sparse_mat!(ss, x_dof, i_vec, j_vec, k_vec)
-    _eval_pipe_equations_sparse_mat!(ss, i_vec, j_vec, k_vec, k_alpha_vec, A_slack)
-    _eval_compressor_equations_sparse_mat!(ss, i_vec, j_vec, k_vec, k_alpha_vec, A_slack)
+    _eval_pipe_equations_sparse_mat!(ss, i_vec, j_vec, k_vec, k_alpha_vec, A_slack, beta_vec, val_ns, pi_slack_vec)
 
     # note we want ns x e edge incidence  which is transpose of vertex incidence hence jvec first
     A_ns = sparse(j_vec, i_vec, k_vec, num_ns, num_edges)
     A_alpha_ns = sparse(j_vec, i_vec, k_alpha_vec, num_ns, num_edges)
 
-    return A_ns, A_alpha_ns, A_slack
+    return A_ns, A_alpha_ns, A_slack, beta_vec, val_ns, pi_slack_vec
 end
 
 """in place Jacobian computation for pipes"""
 function _eval_pipe_equations_sparse_mat!(ss::SteadySimulator, i_vec::Array, j_vec::Array, k_vec::Array, 
-    k_alpha_vec::Array, A_slack::Array)
-    @inbounds for (key, pipe) in ref(ss, :pipe)
+    k_alpha_vec::Array, A_slack::Array, beta_vec::Array, val_ns::Array, pi_slack_vec::Array)
+    @inbounds for (key, pipe) in new_ref(ss, :pipe)
         edge_dof = pipe["edge_dof"]  #shld be edge_id
         fr_node = pipe["fr_node"]  
         to_node = pipe["to_node"]
-
-
-        if ref(ss, :node, fr_node, "vertex_dof") > 0
-            push!(i_vec, edge_dof)
-            push!(j_vec, ref(ss, :node, fr_node, "vertex_dof"))
-            push!(k_vec, +1)
-            push!(k_alpha_vec, +1)
-        else 
-            A_slack[abs(ref(ss, :node, fr_node, "vertex_dof")), edge_dof] = +1
-        end
-
-        if ref(ss, :node, to_node, "vertex_dof") > 0
-            push!(i_vec, edge_dof)
-            push!(j_vec, ref(ss, :node, to_node, "vertex_dof"))
-            push!(k_vec, -1)
-            push!(k_alpha_vec, -1)
-        else
-            A_slack[abs(ref(ss, :node, to_node, "vertex_dof")), edge_dof] = -1
-        end
-
-    end
-end
-
-"""in place Jacobian computation for compressors"""
-function _eval_compressor_equations_sparse_mat!(ss::SteadySimulator, i_vec::Array, j_vec::Array, k_vec::Array, 
-    k_alpha_vec::Array, A_slack::Array)
-    (!haskey(ref(ss), :compressor)) && (return)
-    @inbounds for (comp_id, comp) in ref(ss, :compressor)
-        edge_dof = comp["edge_dof"] 
-        ctr, cmpr_val = control(ss, :compressor, comp_id) #assuming only cratio ctrl
-        to_node = comp["to_node"]
-        fr_node = comp["fr_node"]
-
-        if ref(ss, :node, fr_node, "vertex_dof") > 0
-            push!(i_vec, edge_dof)
-            push!(j_vec, ref(ss, :node, fr_node, "vertex_dof"))
-            push!(k_vec, +1)
-            push!(k_alpha_vec, +1 * cmpr_val^2)
-        else
-            A_slack[abs(ref(ss, :node, fr_node, "vertex_dof")), edge_dof] = +1
-        end
-
-        if ref(ss, :node, to_node, "vertex_dof") > 0
-            push!(i_vec, edge_dof)
-            push!(j_vec, ref(ss, :node, to_node, "vertex_dof"))
-            push!(k_vec, -1)
-            push!(k_alpha_vec, -1)
-        else
-            A_slack[abs(ref(ss, :node, to_node, "vertex_dof")), edge_dof] = -1
-        end
-        
-    end
-end
-
-
-
-"""residual computation for pipes"""
-function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_edges::AbstractArray)
-    @inbounds for (_, pipe) in ref(ss, :pipe)
-        dofid = pipe["dof"]
-        edge_dof = pipe["edge_dof"]
-        f = x_dof[dofid]
-        fr_node = pipe["fr_node"]  
-        to_node = pipe["to_node"]
-        
-
-        if ref(ss, :node, fr_node, "vertex_dof") > 0
-            pi_fr = x_dof[ref(ss, :node, fr_node, "dof")]
-        else
-            ctrl_type, val = control(ss, :node, fr_node) # val is  pressure
-            pi_fr = get_potential(ss, val)
-        end
-
-        if ref(ss, :node, to_node, "vertex_dof") > 0
-            pi_to = x_dof[ref(ss, :node, to_node, "dof")]
-        else
-            ctrl_type, val = control(ss, :node, to_node) # val is  pressure
-            pi_to = get_potential(ss, val)
-        end
+        fr_factor = pipe["fr_factor"]
+        to_factor = pipe["to_factor"]
 
         c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
-
         resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
-        residual_edges[edge_dof] = pi_fr - pi_to - f * abs(f) * resistance
-    end
-end
+        beta_vec[edge_dof] = resistance
 
-"""residual computation for compressor"""
-function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_edges::AbstractArray)
-    (!haskey(ref(ss), :compressor)) && (return)
-    @inbounds for (comp_id, comp) in ref(ss, :compressor)
-        # dofid = comp["dof"] 
-        edge_dof = comp["edge_dof"]
 
-        ctr, cmpr_val = control(ss, :compressor, comp_id)
-        to_node = comp["to_node"]
-        fr_node = comp["fr_node"]
-
-        if ref(ss, :node, fr_node, "vertex_dof") > 0
-            pi_fr = x_dof[ref(ss, :node, fr_node, "dof")]
-        else
-            ctrl_type, val = control(ss, :node, fr_node) # val is  pressure
-            pi_fr = get_potential(ss, val)
+        if new_ref(ss, :node, fr_node, "vertex_dof") > 0
+            push!(i_vec, edge_dof)
+            push!(j_vec, new_ref(ss, :node, fr_node, "vertex_dof"))
+            push!(k_vec, +1)
+            push!(k_alpha_vec, +fr_factor)
+            val_ns[new_ref(ss, :node, fr_node, "vertex_dof")] = -1 * new_ref(ss, :node, fr_node, "withdrawal")
+        else 
+            A_slack[abs(new_ref(ss, :node, fr_node, "vertex_dof")), edge_dof] = +1
+            pi_slack_vec[abs(new_ref(ss, :node, fr_node, "vertex_dof"))] = get_potential(ss, new_ref(ss, :node, fr_node, "pressure"))
         end
 
-        if ref(ss, :node, to_node, "vertex_dof") > 0
-            pi_to = x_dof[ref(ss, :node, to_node, "dof")]
+        if new_ref(ss, :node, to_node, "vertex_dof") > 0
+            push!(i_vec, edge_dof)
+            push!(j_vec, new_ref(ss, :node, to_node, "vertex_dof"))
+            push!(k_vec, -1)
+            push!(k_alpha_vec, -to_factor)
+            val_ns[new_ref(ss, :node, to_node, "vertex_dof")] = -1 * new_ref(ss, :node, to_node, "withdrawal")
         else
-            ctrl_type, val = control(ss, :node, to_node) # val is  pressure
-            pi_to = get_potential(ss, val)
+            A_slack[abs(new_ref(ss, :node, to_node, "vertex_dof")), edge_dof] = -1
+            pi_slack_vec[abs(new_ref(ss, :node, to_node, "vertex_dof"))] = get_potential(ss, new_ref(ss, :node, to_node, "pressure"))
         end
-        
-            
-        residual_edges[edge_dof] = (cmpr_val^2) * pi_fr -  pi_to
+
     end
+    return
 end
+
+
 
 
 

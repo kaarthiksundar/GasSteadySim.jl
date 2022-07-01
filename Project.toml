@@ -4,9 +4,12 @@ authors = ["Shriram Srinivasan and Kaarthik Sundar"]
 version = "0.1.0"
 
 [deps]
-Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
+COSMO = "1e616198-aa4e-51ec-90a2-23f7fbd31d8d"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 LineSearches = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
 SCS = "c946c3f1-0d1f-5ce8-9dea-7daa1f7e2d13"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"

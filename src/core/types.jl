@@ -1,6 +1,7 @@
 struct SteadySimulator
     data::Dict{String,Any}
     ref::Dict{Symbol,Any}
+    new_ref::Dict{Symbol,Any}
     sol::Dict{String,Any}
     nominal_values::Dict{Symbol,Any}
     params::Dict{Symbol,Any}
@@ -15,6 +16,11 @@ ref(ss::SteadySimulator) = ss.ref
 ref(ss::SteadySimulator, key::Symbol) = ss.ref[key]
 ref(ss::SteadySimulator, key::Symbol, id::Int64) = ss.ref[key][id]
 ref(ss::SteadySimulator, key::Symbol, id::Int64, field) = ss.ref[key][id][field]
+
+new_ref(ss::SteadySimulator) = ss.new_ref
+new_ref(ss::SteadySimulator, key::Symbol) = ss.new_ref[key]
+new_ref(ss::SteadySimulator, key::Symbol, id::Int64) = ss.new_ref[key][id]
+new_ref(ss::SteadySimulator, key::Symbol, id::Int64, field) = ss.new_ref[key][id][field]
 
 params(ss::SteadySimulator) = ss.params
 params(ss::SteadySimulator, key::Symbol) = ss.params[key]

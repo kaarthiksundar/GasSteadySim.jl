@@ -5,7 +5,9 @@ using NLsolve
 using SparseArrays
 using LineSearches
 
-using Convex
+import MathOptInterface
+const MOI = MathOptInterface
+using JuMP
 using SCS
 using LinearAlgebra
 
@@ -22,6 +24,7 @@ include("unit_conversion/unit_convertors.jl")
 include("core/eos.jl")
 include("core/types.jl")
 include("core/ref.jl")
+include("core/new_ref.jl")
 include("core/ig.jl")
 include("core/bc.jl")
 include("core/sol.jl")

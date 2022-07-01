@@ -4,7 +4,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         name = :node
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
-        ref[name][id] = Dict()
+        ref[name][id] = Dict()    
         @assert id == node["node_id"]
         ref[name][id]["id"] = id
         ref[name][id]["is_slack"] = node["slack_bool"]

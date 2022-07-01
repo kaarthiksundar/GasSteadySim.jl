@@ -26,11 +26,19 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
     
     #can only be ideal so commenting out next line
     # (eos == :ideal) && (_update_node_flag!(ref)) 
+
+    new_ref = build_new_ref(ref, bc, ref_extensions= [
+        _eliminate_compressor_edges_vertices!,
+        _add_index_info_new_ref!,
+        _add_incident_dofs_info_at_nodes_new_ref!
+        ]
+    )
     
     ig = _build_ig(data) 
 
     ss = SteadySimulator(data,
         ref,
+        new_ref,
         _initialize_solution(data),
         nominal_values,
         params,
