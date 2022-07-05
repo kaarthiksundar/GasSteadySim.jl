@@ -66,6 +66,20 @@ function _create_initial_guess_dof!(ss::SteadySimulator)::Array
     x_guess = 0.5 * ones(Float64, ndofs) 
     dofs_updated = 0
 
+    edge_components = [:pipe, :compressor, 
+        :control_valve, :valve, 
+        :resistor, :loss_resistor, :short_pipe]
+
+    for component in edge_components
+        if !haskey(ref(ss), component)
+            continue 
+        end
+        for i in keys(ref(ss, component))
+            val = rand()
+            x_guess[ref(ss, component, i, "dof")] = 1e-3 * val + 0.5 * (1-val)
+        end 
+    end
+
     components = [:node, :pipe, :compressor, 
         :control_valve, :valve, 
         :resistor, :loss_resistor, :short_pipe]
