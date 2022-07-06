@@ -2,19 +2,19 @@
 
 
 """function assembles the residuals"""
-function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
+function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray; continuation_param::Float64=1.0)
     _eval_junction_equations!(ss, x_dof, residual_dof)
-    _eval_pipe_equations!(ss, x_dof, residual_dof)
+    _eval_pipe_equations!(ss, x_dof, residual_dof, continuation_param=continuation_param)
     _eval_compressor_equations!(ss, x_dof, residual_dof)
     _eval_control_valve_equations!(ss, x_dof, residual_dof)
     _eval_pass_through_equations!(ss, x_dof, residual_dof)
 end
 
 """function assembles the Jacobians"""
-function assemble_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArray)
+function assemble_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArray; continuation_param::Float64=1.0)
     fill!(J, 0)
     _eval_junction_equations_mat!(ss, x_dof, J)
-    _eval_pipe_equations_mat!(ss, x_dof, J)
+    _eval_pipe_equations_mat!(ss, x_dof, J, continuation_param=continuation_param)
     _eval_compressor_equations_mat!(ss, x_dof, J)
     _eval_control_valve_equations_mat!(ss, x_dof, J)
     _eval_pass_through_equations_mat!(ss, x_dof, J)
@@ -44,7 +44,7 @@ function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, re
 end
 
 """residual computation for pipes"""
-function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
+function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray; continuation_param::Float64=1.0)
     @inbounds for (_, pipe) in ref(ss, :pipe)
         eqn_no = pipe["dof"]
         f = x_dof[eqn_no]
@@ -58,8 +58,9 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
         pi_to = (is_to_pressure_node) ? get_potential(ss, x_dof[to_dof]) : x_dof[to_dof] 
         c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
 
-        resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
-        residual_dof[eqn_no] = pi_fr - pi_to - f * abs(f) * resistance
+        resistance = 1e-3 * pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
+        residual_dof[eqn_no] = pi_fr - pi_to -  resistance * f * ( abs(f) ) ^ continuation_param
+        # instead of f * abs(f), do f * ( abs(f) )^z where z can be varied from 0 to 1 
     end
 end
 
@@ -79,7 +80,7 @@ function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, 
         elseif ctr == flow_control
             residual_dof[eqn_no] = x_dof[eqn_no] - cmpr_val
         elseif ctr == discharge_pressure_control
-            coeff = ref(ss, :is_pressure_node, to_node) ? cmpr_val : get_potetial(ss, cmpr_val)
+            coeff = ref(ss, :is_pressure_node, to_node) ? cmpr_val : get_potential(ss, cmpr_val)
             residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - coeff 
         end
     end
@@ -101,7 +102,7 @@ function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArra
         elseif ctr == flow_control
             residual_dof[eqn_no] = x_dof[eqn_no] - cv_val
         elseif ctr == discharge_pressure_control
-            coeff = ref(ss, :is_pressure_node, to_node) ? cv_val : get_potetial(ss, cv_val)
+            coeff = ref(ss, :is_pressure_node, to_node) ? cv_val : get_potential(ss, cv_val)
             residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - coeff
         end
     end
@@ -159,7 +160,7 @@ end
 
 """in place Jacobian computation for pipes"""
 function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
-        J::AbstractArray)
+        J::AbstractArray; continuation_param::Float64=1.0)
     @inbounds for (key, pipe) in ref(ss, :pipe)
         eqn_no = pipe["dof"] 
         f = x_dof[eqn_no]
@@ -172,14 +173,15 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
         is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
         
         c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
-        resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
+        resistance = 1e-3 * pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
 
         pi_dash_fr = (is_fr_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_fr]) : 1.0 
         pi_dash_to = (is_to_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_to]) : 1.0 
 
         J[eqn_no, eqn_fr] = pi_dash_fr
         J[eqn_no, eqn_to] = -pi_dash_to
-        J[eqn_no, eqn_no] = -2.0 * f * sign(f) * resistance
+        J[eqn_no, eqn_no] = -(1 + continuation_param) * resistance * ( abs(f) ) ^ continuation_param
+        # use -(1+z) * ( abs(f) )^z so that for z = 1 we get -2 * abs(f)
     end
 end
 
