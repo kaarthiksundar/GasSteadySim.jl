@@ -23,6 +23,8 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         _add_incident_dofs_info_at_nodes!
         ]
     )
+
+    check_network_topology(ref)
     
     #can only be ideal so commenting out next line
     # (eos == :ideal) && (_update_node_flag!(ref)) 

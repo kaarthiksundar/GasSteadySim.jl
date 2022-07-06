@@ -1,3 +1,24 @@
+
+function check_network_topology(ref::Dict{Symbol, Any})
+    
+    for (comp_id, comp) in get(ref, :compressor, [])
+        to_node = comp["to_node"]
+        fr_node = comp["fr_node"]
+        c1 = ref[:incoming_compressors][to_node]
+        c2 = ref[:incoming_compressors][fr_node]
+        c3 = ref[:outgoing_compressors][to_node]
+        c4 = ref[:outgoing_compressors][fr_node]
+
+        @assert (length(c1) + length(c2) + length(c3) + length(c4) == 2) "Network topology condition NOT satisfied. Terminating routine."
+    end
+
+    println("Network topology condition satisfied. Continuing ... \n ")
+
+    return
+
+end
+
+
 function _add_components_to_new_ref!(new_ref::Dict{Symbol,Any}, ref::Dict{Symbol,Any}, bc::Dict{Symbol,Any})
 
     new_ref[:pipe] = Dict()
