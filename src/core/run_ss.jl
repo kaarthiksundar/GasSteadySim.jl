@@ -1,4 +1,5 @@
 function run_simulator!(ss::SteadySimulator; 
+    continuation_param::Float64=1.0,
     method::Symbol=:newton,
     iteration_limit::Int64=2000, 
     kwargs...)::SolverReturn
@@ -6,10 +7,10 @@ function run_simulator!(ss::SteadySimulator;
     x_guess = _create_initial_guess_dof!(ss)
     n = length(x_guess)
 
-    residual_fun! = (r_dof, x_dof) -> assemble_residual!(ss, x_dof, r_dof)
-    Jacobian_fun! = (J_dof, x_dof) -> assemble_mat!(ss, x_dof, J_dof)
+    residual_fun! = (r_dof, x_dof) -> assemble_residual!(ss, x_dof, r_dof, continuation_param=continuation_param)
+    Jacobian_fun! = (J_dof, x_dof) -> assemble_mat!(ss, x_dof, J_dof, continuation_param=continuation_param)
     J0 = spzeros(n, n)
-    assemble_mat!(ss, rand(n), J0)
+    assemble_mat!(ss, rand(n), J0, continuation_param=continuation_param)
     df = OnceDifferentiable(residual_fun!, Jacobian_fun!, rand(n), rand(n), J0)
 
     time = @elapsed soln = nlsolve(df, x_guess; method = method, iterations = iteration_limit, kwargs...)
@@ -23,6 +24,8 @@ function run_simulator!(ss::SteadySimulator;
             time, soln.zero, 
             Int[], Int[], Int[])
     end
+
+    writedlm("dummy_initial.txt", soln.zero)
 
     sol_return = update_solution_fields_in_ref!(ss, soln.zero)
     populate_solution!(ss)
@@ -63,7 +66,17 @@ end
 
 function _create_initial_guess_dof!(ss::SteadySimulator)::Array
     ndofs = length(ref(ss, :dof))
-    x_guess = 0.5 * ones(Float64, ndofs) 
+     
+    x_guess = readdlm("dummy_initial.txt")
+    if length(x_guess) != ndofs
+        x_guess = ones(Float64, ndofs)
+    end
+
+    # x_guess = rand(Normal(0, 1), ndofs)
+
+    # num_nodes = length(ss.ref[:node])
+    # x_guess[1:num_nodes] .= 1.0
+
     dofs_updated = 0
 
     components = [:node, :pipe, :compressor, 
