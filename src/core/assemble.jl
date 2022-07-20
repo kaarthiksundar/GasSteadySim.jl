@@ -75,7 +75,7 @@ function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, 
         if ctr  == c_ratio_control
             is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
             val = (is_pressure_eq) ? cmpr_val : cmpr_val^2
-            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - val * x_dof[ref(ss, :node, fr_node, "dof")]
+            residual_dof[eqn_no] = val * x_dof[ref(ss, :node, fr_node, "dof")] -  x_dof[ref(ss, :node, to_node, "dof")]
         elseif ctr == flow_control
             residual_dof[eqn_no] = x_dof[eqn_no] - cmpr_val
         elseif ctr == discharge_pressure_control
@@ -97,7 +97,7 @@ function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArra
         if ctr  == c_ratio_control
             is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
             val = (is_pressure_eq) ? cv_val : cv_val^2
-            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - val * x_dof[ref(ss, :node, fr_node, "dof")]
+            residual_dof[eqn_no] = val * x_dof[ref(ss, :node, fr_node, "dof")]  - x_dof[ref(ss, :node, to_node, "dof")]
         elseif ctr == flow_control
             residual_dof[eqn_no] = x_dof[eqn_no] - cv_val
         elseif ctr == discharge_pressure_control
@@ -121,11 +121,11 @@ function _eval_pass_through_equations!(ss::SteadySimulator, x_dof::AbstractArray
             is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
             is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
             if (is_fr_pressure_node && is_to_pressure_node)
-                residual_dof[eqn_no] = x_dof[to_dof] - x_dof[fr_dof]
+                residual_dof[eqn_no] = x_dof[fr_dof] - x_dof[to_dof]
             else
                 pi_fr = (is_fr_pressure_node) ? get_potential(ss, x_dof[fr_dof]) : x_dof[fr_dof] 
                 pi_to = (is_to_pressure_node) ? get_potential(ss, x_dof[to_dof]) : x_dof[to_dof] 
-                residual_dof[eqn_no] = pi_to - pi_fr
+                residual_dof[eqn_no] = pi_fr - pi_to
             end 
         end 
     end 
@@ -197,8 +197,8 @@ function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::AbstractArr
         is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
         
         if ctr  == c_ratio_control
-            J[eqn_no, eqn_to] = 1
-            J[eqn_no, eqn_fr] = (is_pressure_eq) ? (-cmpr_val) : (-cmpr_val^2)
+            J[eqn_no, eqn_to] = -1
+            J[eqn_no, eqn_fr] = (is_pressure_eq) ? (cmpr_val) : (cmpr_val^2)
         elseif ctr == flow_control
             J[eqn_no, eqn_no] = 1
         elseif ctr == discharge_pressure_control
@@ -221,8 +221,8 @@ function _eval_control_valve_equations_mat!(ss::SteadySimulator, x_dof::Abstract
         is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
         
         if ctr  == c_ratio_control
-            J[eqn_no, eqn_to] = 1
-            J[eqn_no, eqn_fr] = is_pressure_eq ? (-cv_val) : (-cv_val^2)
+            J[eqn_no, eqn_to] = -1
+            J[eqn_no, eqn_fr] = is_pressure_eq ? (cv_val) : (cv_val^2)
         elseif ctr == flow_control
             J[eqn_no, eqn_no] = 1
         elseif ctr == discharge_pressure_control
@@ -247,13 +247,13 @@ function _eval_pass_through_equations_mat!(ss::SteadySimulator, x_dof::AbstractA
             is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
 
             if (is_fr_pressure_node && is_to_pressure_node)
-                J[eqn_no, eqn_to] = 1.0
-                J[eqn_no, eqn_fr] = -1.0
+                J[eqn_no, eqn_to] = -1.0
+                J[eqn_no, eqn_fr] = 1.0
             else
                 pi_dash_fr = (is_fr_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_fr]) : 1.0 
                 pi_dash_to = (is_to_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_to]) : 1.0
-                J[eqn_no, eqn_to] = pi_dash_to
-                J[eqn_no, eqn_fr] = -pi_dash_fr
+                J[eqn_no, eqn_to] = -pi_dash_to
+                J[eqn_no, eqn_fr] = pi_dash_fr
             end 
         end 
     end 
