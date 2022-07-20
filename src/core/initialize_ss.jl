@@ -39,11 +39,12 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         _initialize_solution(data),
         nominal_values,
         params,
-        ig, bc,
+        ig, bc, OptModel(),
         _get_eos(eos)...
     )
 
-    # _add_flow_bounds_to_ref!(ss)
+    _add_flow_bounds_to_ref!(ss)
+    populate_lp_model!(ss)
 
     return ss
 end

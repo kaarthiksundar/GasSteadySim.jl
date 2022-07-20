@@ -4,6 +4,7 @@ import JSON
 using NLsolve
 using SparseArrays
 using LineSearches
+using JuMP
 
 include("io/json.jl")
 include("io/data_utils.jl")
@@ -21,6 +22,7 @@ include("core/ig.jl")
 include("core/bc.jl")
 include("core/sol.jl")
 include("core/bounds.jl")
+include("core/lp.jl")
 include("core/initialize_ss.jl")
 include("core/assemble.jl")
 include("core/run_ss.jl")

@@ -1,3 +1,31 @@
+struct OptModel 
+    model::JuMP.AbstractModel 
+    variables::Dict{Symbol,Any}
+    solution::Dict{Symbol,Any}
+    residuals::Dict{Symbol,Any}
+end 
+
+OptModel() = OptModel(
+    JuMP.Model(), 
+    Dict{Symbol,Any}(), 
+    Dict{Symbol,Any}(), 
+    Dict{Symbol,Any}()
+)
+
+var(om::OptModel) = om.variables 
+var(om::OptModel, key::Symbol) = om.variables[key]
+var(om::OptModel, key::Symbol, id::Int64) = om.variables[key][id]
+
+sol(om::OptModel) = om.solution
+sol(om::OptModel, key::Symbol) = om.solution[key]
+sol(om::OptModel, key::Symbol, id::Int64) = om.solution[key][id]
+
+residual(om::OptModel) = om.residuals
+residual(om::OptModel, key::Symbol) = om.residuals[key]
+residual(om::OptModel, key::Symbol, id::Int64) = om.residuals[key][id]
+
+
+
 struct SteadySimulator
     data::Dict{String,Any}
     ref::Dict{Symbol,Any}
@@ -6,6 +34,7 @@ struct SteadySimulator
     params::Dict{Symbol,Any}
     initial_guess::Dict{Symbol,Any}
     boundary_conditions::Dict{Symbol,Any}
+    lp_relax::OptModel
     pu_eos_coeffs::Function
     pu_pressure_to_pu_density::Function
     pu_density_to_pu_pressure::Function
