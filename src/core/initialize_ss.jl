@@ -11,7 +11,11 @@ function initialize_simulator(data_folder::AbstractString;
     return initialize_simulator(data; kwargs...)
 end
 
-function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::SteadySimulator
+function initialize_simulator(data::Dict{String,Any}; 
+    eos::Symbol=:ideal,
+    initial_guess_from_opt::Bool=true,
+    optimizer=_highs_optimizer
+    )::SteadySimulator
     params, nominal_values = process_data!(data)
     make_per_unit!(data, params, nominal_values)
     bc = _build_bc(data)
@@ -39,12 +43,17 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         _initialize_solution(data),
         nominal_values,
         params,
-        ig, bc, OptModel(),
+        ig, bc, OptModel(optimizer),
         _get_eos(eos)...
     )
 
     _add_flow_bounds_to_ref!(ss)
     populate_lp_model!(ss)
+
+    if initial_guess_from_opt
+        solve_lp_model!(ss)
+        populate
+    end 
 
     return ss
 end

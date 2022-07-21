@@ -5,8 +5,8 @@ struct OptModel
     residuals::Dict{Symbol,Any}
 end 
 
-OptModel() = OptModel(
-    JuMP.Model(), 
+OptModel(optimizer) = OptModel(
+    JuMP.Model(optimizer), 
     Dict{Symbol,Any}(), 
     Dict{Symbol,Any}(), 
     Dict{Symbol,Any}()

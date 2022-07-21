@@ -6,6 +6,14 @@ using SparseArrays
 using LineSearches
 using JuMP
 using PolyhedralRelaxations
+using HiGHS 
+
+_highs_optimizer = JuMP.optimizer_with_attributes(
+    HiGHS.Optimizer,
+    "presolve" => "on"
+)
+
+PolyhedralRelaxations.silence!()
 
 include("io/json.jl")
 include("io/data_utils.jl")

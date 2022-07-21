@@ -9,13 +9,11 @@ function populate_lp_model!(ss::SteadySimulator;
     model = ss.lp_relax
     m = model.model
     var = model.variables 
-    sol = model.sol 
-    residual = model.residuals
 
     # initialize variables (x contains [potentials, lifted flows for pipes, flows for the rest of the components])
     var[:x] = x = JuMP.@variable(m, [i in keys(ref(ss, :dof))])
     non_slack_node_dofs = filter(
-        tuple -> first(last(tuple)) == :node && !ref(ss, :node, last(last(tuple)), "is_slack"), 
+        tuple -> first(last(tuple)) == :node && ref(ss, :node, last(last(tuple)), "is_slack") == false, 
         ref(ss, :dof)
     )
     pressure_node_dofs = filter(
@@ -24,7 +22,7 @@ function populate_lp_model!(ss::SteadySimulator;
     )
     pipe_dofs = filter(tuple -> first(last(tuple)) == :pipe, ref(ss, :dof))
     var[:pressure] = pressure = JuMP.@variable(m, [i in keys(pressure_node_dofs)])
-    val[:flow] = flow = JuMP.@variable(m, [i in keys(pipe_dofs)])
+    var[:flow] = flow = JuMP.@variable(m, [i in keys(pipe_dofs)])
     var[:t] = t = JuMP.@variable(m, [i in keys(non_slack_node_dofs)], lower_bound = 0.0)
 
     # set bounds
@@ -60,14 +58,16 @@ function populate_lp_model!(ss::SteadySimulator;
         if  ctrl_type == flow_control
             out_edge = ref(ss, :outgoing_dofs, node_id)
             in_edge = ref(ss, :incoming_dofs, node_id)
-            balance_expr = sum(flow[e] for e in in_edge; init=0.0) - sum(flow[e] for e in out_edge; init=0.0) - val
+            in_expr = sum((first(ref(ss, :dof, e)) == :pipe) ? flow[e] : x[e] for e in in_edge; init=0.0)
+            out_expr = sum((first(ref(ss, :dof, e)) == :pipe) ? flow[e] : x[e] for e in out_edge; init=0.0)
+            balance_expr = in_expr - out_expr - val
             JuMP.@constraint(m, balance_expr >= -t[eqn_no])
             JuMP.@constraint(m, balance_expr <= t[eqn_no])
         end
 
         if ref(ss, :is_pressure_node, node_id)
-            lb = JuMP.get_lower_bound(pressure[eqn_no])
-            ub = JuMP.get_upper_bound(pressure[eqn_no])
+            lb = JuMP.lower_bound(pressure[eqn_no])
+            ub = JuMP.upper_bound(pressure[eqn_no])
             partition = collect(range(start=lb, stop=ub, length=num_pressure_partitions+1))
             construct_univariate_relaxation!(m, 
                 p -> get_potential(ss, p), 
@@ -92,8 +92,8 @@ function populate_lp_model!(ss::SteadySimulator;
         resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
         JuMP.@constraint(m, pi_fr - pi_to == f * resistance)
         
-        lb = JuMP.get_lower_bound(flow[eqn_no])
-        ub = JuMP.get_upper_bound(flow[eqn_no])
+        lb = JuMP.lower_bound(flow[eqn_no])
+        ub = JuMP.upper_bound(flow[eqn_no])
         partition = [
             collect(range(start=lb, stop=0.0, length=num_positive_flow_partitions+1))..., 
             collect(range(start=0.0, stop=ub, length=num_positive_flow_partitions+1))[2:end]...
@@ -162,3 +162,7 @@ function populate_lp_model!(ss::SteadySimulator;
     JuMP.@objective(m, Min, sum(t))
 end 
 
+
+function solve_lp_model!(ss::SteadySimulator)
+    JuMP.optimize!(ss.lp_relax.model)
+end
