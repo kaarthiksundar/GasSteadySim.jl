@@ -78,7 +78,6 @@ function populate_lp_model!(ss::SteadySimulator;
         end 
     end
 
-
     # add pipe constraints
     for (_, pipe) in ref(ss, :pipe)
         eqn_no = pipe["dof"]
@@ -87,16 +86,79 @@ function populate_lp_model!(ss::SteadySimulator;
         to_node = pipe["to_node"]
         fr_dof = ref(ss, :node, fr_node, "dof")
         to_dof = ref(ss, :node, to_node, "dof")
-        is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
-        is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
-        pi_fr = (is_fr_pressure_node) ? get_potential(ss, x_dof[fr_dof]) : x_dof[fr_dof] 
-        pi_to = (is_to_pressure_node) ? get_potential(ss, x_dof[to_dof]) : x_dof[to_dof] 
+        pi_fr = x[fr_dof]
+        pi_to = x[to_dof] 
         c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
-
         resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
-        residual_dof[eqn_no] = pi_fr - pi_to - f * abs(f) * resistance
+        JuMP.@constraint(m, pi_fr - pi_to == f * resistance)
+        
+        lb = JuMP.get_lower_bound(flow[eqn_no])
+        ub = JuMP.get_upper_bound(flow[eqn_no])
+        partition = [
+            collect(range(start=lb, stop=0.0, length=num_positive_flow_partitions+1))..., 
+            collect(range(start=0.0, stop=ub, length=num_positive_flow_partitions+1))[2:end]...
+        ]
+        construct_univariate_relaxation!(m, 
+            y -> y * abs(y), 
+            flow[eqn_no], f, 
+            partition, false, 
+            f_dash=y->2 * abs(y)
+        )
     end
-    
 
+    # add compressor constraints 
+    for (comp_id, comp) in get(ref(ss), :compressor, [])
+        _ = comp["dof"] 
+        _, cmpr_val = control(ss, :compressor, comp_id)
+        to_node = comp["to_node"]
+        fr_node = comp["fr_node"]
+        
+        is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
+        val = (is_pressure_eq) ? cmpr_val : cmpr_val^2
+        if (is_pressure_eq)
+            JuMP.@constraint(m, pressure[ref(ss, :node, fr_node, "dof")] * val == pressure[ref(ss, :node, to_node, "dof")])
+        else 
+            JuMP.@constraint(m, x[ref(ss, :node, fr_node, "dof")] * val == x[ref(ss, :node, to_node, "dof")])
+        end 
+    end
+
+    # add control valve constraints 
+    for (cv_id, cv) in get(ref(ss), :control_valve, [])
+        _ = cv["dof"] 
+        _, cv_val = control(ss, :control_valve, cv_id)
+        to_node = cv["to_node"]
+        fr_node = cv["fr_node"]
+        
+        is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
+        val = (is_pressure_eq) ? cv_val : cv_val^2
+        if (is_pressure_eq)
+            JuMP.@constraint(m, val * pressure[ref(ss, :node, fr_node, "dof")] == pressure[ref(ss, :node, to_node, "dof")])
+        else 
+            JuMP.@constraint(m, x[ref(ss, :node, fr_node, "dof")] * val == x[ref(ss, :node, to_node, "dof")])
+        end 
+    end
+
+    # add pass-through component constraints
+    components = [:valve, :resistor, :loss_resistor, :short_pipe]
+    for component in components 
+        (!haskey(ref(ss), component)) && (continue)
+        for (_, comp) in ref(ss, component)
+            _ = comp["dof"]
+            fr_node = comp["fr_node"]
+            to_node = comp["to_node"]
+            fr_dof = ref(ss, :node, fr_node, "dof")
+            to_dof = ref(ss, :node, to_node, "dof")
+            is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
+            is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
+            if (is_fr_pressure_node && is_to_pressure_node)
+                JuMP.@constraint(m, pressure[fr_dof] == pressure[to_dof])
+            else
+                JuMP.@constraint(m, x[fr_dof] == x[to_dof])
+            end 
+        end 
+    end 
+
+    # add objective 
+    JuMP.@objective(m, Min, sum(t))
 end 
 
