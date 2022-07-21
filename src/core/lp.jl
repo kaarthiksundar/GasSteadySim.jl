@@ -3,7 +3,9 @@ function set_bounds(x::JuMP.VariableRef, lb::Number, ub::Number)
     JuMP.set_upper_bound(x, ub)
 end 
 
-function populate_lp_model!(ss::SteadySimulator)
+function populate_lp_model!(ss::SteadySimulator; 
+    num_pressure_partitions::Int64 = 5, 
+    num_positive_flow_partitions::Int64 = 5)
     model = ss.lp_relax
     m = model.model
     var = model.variables 
@@ -62,7 +64,20 @@ function populate_lp_model!(ss::SteadySimulator)
             JuMP.@constraint(m, balance_expr >= -t[eqn_no])
             JuMP.@constraint(m, balance_expr <= t[eqn_no])
         end
+
+        if ref(ss, :is_pressure_node, node_id)
+            lb = JuMP.get_lower_bound(pressure[eqn_no])
+            ub = JuMP.get_upper_bound(pressure[eqn_no])
+            partition = collect(range(start=lb, stop=ub, length=num_pressure_partitions+1))
+            construct_univariate_relaxation!(m, 
+                p -> get_potential(ss, p), 
+                pressure[eqn_no], x[eqn_no], 
+                partition, false, 
+                f_dash=p->get_potential_derivative(ss, p)
+            )
+        end 
     end
+
 
     # add pipe constraints
     for (_, pipe) in ref(ss, :pipe)

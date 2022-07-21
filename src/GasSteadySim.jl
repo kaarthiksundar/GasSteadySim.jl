@@ -5,6 +5,7 @@ using NLsolve
 using SparseArrays
 using LineSearches
 using JuMP
+using PolyhedralRelaxations
 
 include("io/json.jl")
 include("io/data_utils.jl")
