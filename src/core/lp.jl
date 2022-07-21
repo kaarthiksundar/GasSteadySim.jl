@@ -12,11 +12,18 @@ function populate_lp_model!(ss::SteadySimulator)
 
     # initialize variables (x contains [potentials, lifted flows for pipes, flows for the rest of the components])
     var[:x] = x = JuMP.@variable(m, [i in keys(ref(ss, :dof))])
-    non_slack_nodes = filter(tuple -> ~last(tuple)["is_slack"], ref(ss, :node))
-    pressure_nodes = filter(tuple -> ref(ss, :is_pressure_node, first(tuple)), ref(ss, :node))
-    var[:pressure] = pressure = JuMP.@variable(m, [i in keys(pressure_nodes)])
-    val[:flow] = flow = JuMP.@variable(m, [i in keys(ref(ss, :pipe))])
-    var[:t] = t = JuMP.@variable(m, [i in keys(non_slack_nodes)], lower_bound = 0.0)
+    non_slack_node_dofs = filter(
+        tuple -> first(last(tuple)) == :node && !ref(ss, :node, last(last(tuple)), "is_slack"), 
+        ref(ss, :dof)
+    )
+    pressure_node_dofs = filter(
+        tuple -> first(last(tuple)) == :node && ref(ss, :is_pressure_node, last(last(tuple))), 
+        ref(ss, :dof)
+    )
+    pipe_dofs = filter(tuple -> first(last(tuple)) == :pipe, ref(ss, :dof))
+    var[:pressure] = pressure = JuMP.@variable(m, [i in keys(pressure_node_dofs)])
+    val[:flow] = flow = JuMP.@variable(m, [i in keys(pipe_dofs)])
+    var[:t] = t = JuMP.@variable(m, [i in keys(non_slack_node_dofs)], lower_bound = 0.0)
 
     # set bounds
     for (dof, val) in ref(ss, :dof)
