@@ -13,7 +13,7 @@ end
 
 function initialize_simulator(data::Dict{String,Any}; 
     eos::Symbol=:ideal,
-    initial_guess_from_opt::Bool=true,
+    initial_guess_from_opt::Bool=false,
     optimizer=_highs_optimizer
     )::SteadySimulator
     params, nominal_values = process_data!(data)

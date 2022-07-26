@@ -5,7 +5,6 @@ function _get_eos(eos::Symbol)
         (return _simple_cnga_coeffs, _pressure_to_density_simple_cnga, _density_to_pressure_simple_cnga)
     (eos == :full_cnga) &&
         (return _full_cnga_coeffs, _pressure_to_density_full_cnga, _density_to_pressure_full_cnga)
-
 end
 
 function _ideal_coeffs(nominal_values::Dict{Symbol,Any}, params::Dict{Symbol,Any})::Tuple{Float64,Float64}
