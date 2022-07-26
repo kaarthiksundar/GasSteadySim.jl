@@ -58,7 +58,7 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
         pi_to = (is_to_pressure_node) ? get_potential(ss, x_dof[to_dof]) : x_dof[to_dof] 
         c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
 
-        resistance = 1e-3 * pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
+        resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
         residual_dof[eqn_no] = pi_fr - pi_to -  resistance * f * ( abs(f) ) ^ continuation_param
         # instead of f * abs(f), do f * ( abs(f) )^z where z can be varied from 0 to 1 
     end
@@ -173,7 +173,7 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
         is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
         
         c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
-        resistance = 1e-3 * pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
+        resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
 
         pi_dash_fr = (is_fr_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_fr]) : 1.0 
         pi_dash_to = (is_to_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_to]) : 1.0 
