@@ -17,6 +17,7 @@ function initialize_simulator(data::Dict{String,Any};
     optimizer=_highs_optimizer
     )::SteadySimulator
     params, nominal_values = process_data!(data)
+    params[:initial_guess_from_opt] = initial_guess_from_opt
     make_per_unit!(data, params, nominal_values)
     bc = _build_bc(data)
 
@@ -48,11 +49,13 @@ function initialize_simulator(data::Dict{String,Any};
     )
 
     _add_flow_bounds_to_ref!(ss)
-    populate_lp_model!(ss)
+    _populate_lp_model!(ss)
 
     if initial_guess_from_opt
-        solve_lp_model!(ss)
-        populate
+        _solve_lp_model!(ss)
+        if _is_optimal(ss)
+            _populate_lp_solution!(ss)
+        end 
     end 
 
     return ss

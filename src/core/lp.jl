@@ -1,9 +1,9 @@
-function set_bounds(x::JuMP.VariableRef, lb::Number, ub::Number)
+function _set_bounds(x::JuMP.VariableRef, lb::Number, ub::Number)
     JuMP.set_lower_bound(x, lb)
     JuMP.set_upper_bound(x, ub)
 end 
 
-function populate_lp_model!(ss::SteadySimulator; 
+function _populate_lp_model!(ss::SteadySimulator; 
     num_pressure_partitions::Int64 = 5, 
     num_positive_flow_partitions::Int64 = 5)
     model = ss.lp_relax
@@ -31,12 +31,12 @@ function populate_lp_model!(ss::SteadySimulator;
         if val[1] == :node 
             lb = get_potential(ss, ref(ss, :node, id, "min_pressure"))
             ub = get_potential(ss, ref(ss, :node, id, "max_pressure"))
-            set_bounds(x[dof], lb, ub)
+            _set_bounds(x[dof], lb, ub)
             if ref(ss, :is_pressure_node, id)
-                set_bounds(pressure[dof], ref(ss, :node, id, "min_pressure"), ref(ss, :node, id, "max_pressure"))
+                _set_bounds(pressure[dof], ref(ss, :node, id, "min_pressure"), ref(ss, :node, id, "max_pressure"))
             end 
         elseif val[1] == :pipe 
-            set_bounds(flow[dof], ref(ss, :pipe, id, "min_flow"), ref(ss, :pipe, id, "max_flow"))
+            _set_bounds(flow[dof], ref(ss, :pipe, id, "min_flow"), ref(ss, :pipe, id, "max_flow"))
         else 
             continue 
         end 
@@ -162,7 +162,38 @@ function populate_lp_model!(ss::SteadySimulator;
     JuMP.@objective(m, Min, sum(t))
 end 
 
-
-function solve_lp_model!(ss::SteadySimulator)
+# solve the LP relaxation model
+function _solve_lp_model!(ss::SteadySimulator)
     JuMP.optimize!(ss.lp_relax.model)
 end
+
+_is_optimal(ss::SteadySimulator) = JuMP.termination_status(ss.lp_relax.model) == MOI.OPTIMAL
+
+# populate the LP solution for an initial guess with the residuals
+function _populate_lp_solution!(ss::SteadySimulator)
+    om = ss.lp_relax
+    m = om.model
+    (JuMP.termination_status(m) != MOI.OPTIMAL) && (return)
+    sol(om)[:x] = Dict{Int, Any}()
+
+    for (node_id, node) in ref(ss, :node)
+        eqn_no = node["dof"]
+        sol(om, :x)[eqn_no] = (ref(ss, :is_pressure_node, node_id)) ? JuMP.value(var(om, :pressure, eqn_no)) : JuMP.value(var(om, :x, eqn_no))
+    end
+    
+    for (_, pipe) in ref(ss, :pipe)
+        eqn_no = pipe["dof"]
+        sol(om, :x)[eqn_no] = JuMP.value(var(om, :flow, eqn_no))
+    end 
+    
+    components = [:compressor, :control_valve, :valve, :resistor, :loss_resistor, :short_pipe]
+    for component in components 
+        (!haskey(ref(ss), component)) && (continue)
+        for (_, comp) in ref(ss, component)
+            eqn_no = comp["dof"]
+            sol(om, :x)[eqn_no] = JuMP.value(var(om, :x, eqn_no))
+        end 
+    end
+    
+end
+

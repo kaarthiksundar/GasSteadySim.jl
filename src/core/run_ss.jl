@@ -66,6 +66,13 @@ function _create_initial_guess_dof!(ss::SteadySimulator)::Array
     x_guess = 0.5 * ones(Float64, ndofs) 
     dofs_updated = 0
 
+    if params(ss, :initial_guess_from_opt) 
+        for i in 1:ndofs 
+            x_guess[i] = sol(ss.lp_relax, :x, i)
+        end 
+        return x_guess
+    end 
+
     components = [:node, :pipe, :compressor, 
         :control_valve, :valve, 
         :resistor, :loss_resistor, :short_pipe]

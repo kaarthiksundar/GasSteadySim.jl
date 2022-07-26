@@ -10,7 +10,8 @@ using HiGHS
 
 _highs_optimizer = JuMP.optimizer_with_attributes(
     HiGHS.Optimizer,
-    "presolve" => "on"
+    "presolve" => "on",
+    "output_flag" => false
 )
 
 PolyhedralRelaxations.silence!()
