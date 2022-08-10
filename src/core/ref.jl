@@ -5,7 +5,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == node["node_id"]
+        @assert id == node["id"]
         ref[name][id]["id"] = id
         ref[name][id]["is_slack"] = node["slack_bool"]
         ref[name][id]["pressure"] = NaN
@@ -19,7 +19,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == pipe["pipe_id"]
+        @assert id == pipe["id"]
         ref[name][id]["id"] = id
         ref[name][id]["fr_node"] = pipe["from_node"]
         ref[name][id]["to_node"] = pipe["to_node"]
@@ -35,7 +35,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == compressor["comp_id"]
+        @assert id == compressor["id"]
         ref[name][id]["id"] = id
         ref[name][id]["to_node"] = compressor["to_node"]
         ref[name][id]["fr_node"] = compressor["from_node"]
@@ -51,7 +51,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == control_valve["control_valve_id"]
+        @assert id == control_valve["id"]
         ref[name][id]["id"] = id
         ref[name][id]["to_node"] = control_valve["to_node"]
         ref[name][id]["fr_node"] = control_valve["from_node"]
@@ -67,7 +67,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         (!haskey(ref, name)) && (ref[name] = Dict()) 
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == valve["valve_id"]
+        @assert id == valve["id"]
         ref[name][id]["id"] = id
         ref[name][id]["to_node"] = valve["to_node"]
         ref[name][id]["fr_node"] = valve["from_node"]
@@ -79,7 +79,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == resistor["resistor_id"]
+        @assert id == resistor["id"]
         ref[name][id]["id"] = id
         ref[name][id]["fr_node"] = resistor["from_node"]
         ref[name][id]["to_node"] = resistor["to_node"]
@@ -93,7 +93,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == loss_resistor["loss_resistor_id"]
+        @assert id == loss_resistor["id"]
         ref[name][id]["id"] = id
         ref[name][id]["fr_node"] = loss_resistor["from_node"]
         ref[name][id]["to_node"] = loss_resistor["to_node"]
@@ -106,7 +106,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         (!haskey(ref, name)) && (ref[name] = Dict())
         id = parse(Int64, i)
         ref[name][id] = Dict()
-        @assert id == pipe["short_pipe_id"]
+        @assert id == pipe["id"]
         ref[name][id]["id"] = id
         ref[name][id]["fr_node"] = pipe["from_node"]
         ref[name][id]["to_node"] = pipe["to_node"]

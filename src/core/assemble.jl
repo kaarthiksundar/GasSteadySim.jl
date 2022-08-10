@@ -22,20 +22,20 @@ end
 
 """residual computation for junctions"""
 function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
-    @inbounds for (node_id, junction) in ref(ss, :node)
+    @inbounds for (id, junction) in ref(ss, :node)
         eqn_no = junction["dof"]
-        ctrl_type, val = control(ss, :node, node_id) # val is withdrawal or pressure
+        ctrl_type, val = control(ss, :node, id) # val is withdrawal or pressure
 
         if ctrl_type == pressure_control
-            coeff = (ref(ss, :is_pressure_node, node_id)) ? val : get_potential(ss, val)
+            coeff = (ref(ss, :is_pressure_node, id)) ? val : get_potential(ss, val)
             residual_dof[eqn_no] = x_dof[eqn_no] - coeff
 
         end
 
         if  ctrl_type == flow_control
             r = (-val) # inflow is positive convention
-            out_edge = ref(ss, :outgoing_dofs, node_id)
-            in_edge = ref(ss, :incoming_dofs, node_id)
+            out_edge = ref(ss, :outgoing_dofs, id)
+            in_edge = ref(ss, :incoming_dofs, id)
             r -= sum(x_dof[e] for e in out_edge; init=0.0) 
             r += sum(x_dof[e] for e in in_edge; init=0.0)
             residual_dof[eqn_no] = r
@@ -66,9 +66,9 @@ end
 """residual computation for compressor"""
 function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     (!haskey(ref(ss), :compressor)) && (return)
-    @inbounds for (comp_id, comp) in ref(ss, :compressor)
+    @inbounds for (id, comp) in ref(ss, :compressor)
         eqn_no = comp["dof"] 
-        ctr, cmpr_val = control(ss, :compressor, comp_id)
+        ctr, cmpr_val = control(ss, :compressor, id)
         to_node = comp["to_node"]
         fr_node = comp["fr_node"]
         
@@ -134,9 +134,9 @@ end
 """in place Jacobian computation for junctions"""
 function _eval_junction_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
         J::AbstractArray)
-    @inbounds for (node_id, junction) in ref(ss, :node)
+    @inbounds for (id, junction) in ref(ss, :node)
         eqn_no = junction["dof"]
-        ctrl_type, _ = control(ss, :node, node_id) # val is withdrawal or pressure
+        ctrl_type, _ = control(ss, :node, id) # val is withdrawal or pressure
         
         if ctrl_type == pressure_control
             J[eqn_no, eqn_no] = 1
@@ -144,8 +144,8 @@ function _eval_junction_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray
         end
 
         if  ctrl_type == flow_control
-            out_edge = ref(ss, :outgoing_dofs, node_id)
-            in_edge = ref(ss, :incoming_dofs, node_id)
+            out_edge = ref(ss, :outgoing_dofs, id)
+            in_edge = ref(ss, :incoming_dofs, id)
             for e in out_edge
                 J[eqn_no, e] = -1
             end
@@ -187,9 +187,9 @@ end
 function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
         J::AbstractArray)
     (!haskey(ref(ss), :compressor)) && (return)
-    @inbounds for (comp_id, comp) in ref(ss, :compressor)
+    @inbounds for (id, comp) in ref(ss, :compressor)
         eqn_no = comp["dof"] 
-        ctr, cmpr_val = control(ss, :compressor, comp_id)
+        ctr, cmpr_val = control(ss, :compressor, id)
         to_node = comp["to_node"]
         fr_node = comp["fr_node"]
         eqn_to = ref(ss, :node, to_node, "dof")
