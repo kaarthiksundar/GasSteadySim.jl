@@ -21,7 +21,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id] = Dict()
         @assert id == pipe["id"]
         ref[name][id]["id"] = id
-        ref[name][id]["fr_node"] = pipe["from_node"]
+        ref[name][id]["fr_node"] = pipe["fr_node"]
         ref[name][id]["to_node"] = pipe["to_node"]
         ref[name][id]["diameter"] = pipe["diameter"]
         ref[name][id]["area"] = pipe["area"]
@@ -38,7 +38,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         @assert id == compressor["id"]
         ref[name][id]["id"] = id
         ref[name][id]["to_node"] = compressor["to_node"]
-        ref[name][id]["fr_node"] = compressor["from_node"]
+        ref[name][id]["fr_node"] = compressor["fr_node"]
         ref[name][id]["control_type"] = unknown_control
         ref[name][id]["c_ratio"] = NaN
         ref[name][id]["discharge_pressure"] = NaN
@@ -54,7 +54,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         @assert id == control_valve["id"]
         ref[name][id]["id"] = id
         ref[name][id]["to_node"] = control_valve["to_node"]
-        ref[name][id]["fr_node"] = control_valve["from_node"]
+        ref[name][id]["fr_node"] = control_valve["fr_node"]
         ref[name][id]["control_type"] = unknown_control
         ref[name][id]["c_ratio"] = NaN
         ref[name][id]["discharge_pressure"] = NaN
@@ -70,7 +70,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         @assert id == valve["id"]
         ref[name][id]["id"] = id
         ref[name][id]["to_node"] = valve["to_node"]
-        ref[name][id]["fr_node"] = valve["from_node"]
+        ref[name][id]["fr_node"] = valve["fr_node"]
         ref[name][id]["flow"] = NaN
     end 
 
@@ -81,7 +81,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id] = Dict()
         @assert id == resistor["id"]
         ref[name][id]["id"] = id
-        ref[name][id]["fr_node"] = resistor["from_node"]
+        ref[name][id]["fr_node"] = resistor["fr_node"]
         ref[name][id]["to_node"] = resistor["to_node"]
         ref[name][id]["drag"] = resistor["drag"]
         ref[name][id]["diameter"] = resistor["drag"]
@@ -95,7 +95,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id] = Dict()
         @assert id == loss_resistor["id"]
         ref[name][id]["id"] = id
-        ref[name][id]["fr_node"] = loss_resistor["from_node"]
+        ref[name][id]["fr_node"] = loss_resistor["fr_node"]
         ref[name][id]["to_node"] = loss_resistor["to_node"]
         ref[name][id]["pressure_drop"] = loss_resistor["p_loss"]
         ref[name][id]["flow"] = NaN
@@ -108,7 +108,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id] = Dict()
         @assert id == pipe["id"]
         ref[name][id]["id"] = id
-        ref[name][id]["fr_node"] = pipe["from_node"]
+        ref[name][id]["fr_node"] = pipe["fr_node"]
         ref[name][id]["to_node"] = pipe["to_node"]
         ref[name][id]["flow"] = NaN
     end 

@@ -225,7 +225,7 @@
       "id": 4,
       "to_node": 6,
       "diameter": 0.9,
-      "from_node": 4
+      "fr_node": 4
     },
     "1": {
       "length": 50000.0,
@@ -234,7 +234,7 @@
       "id": 1,
       "to_node": 12,
       "diameter": 1.1,
-      "from_node": 17
+      "fr_node": 17
     },
     "12": {
       "length": 50000.0,
@@ -243,7 +243,7 @@
       "id": 12,
       "to_node": 24,
       "diameter": 1.1,
-      "from_node": 7
+      "fr_node": 7
     },
     "2": {
       "length": 10.0,
@@ -252,7 +252,7 @@
       "id": 2,
       "to_node": 2,
       "diameter": 2.1,
-      "from_node": 1
+      "fr_node": 1
     },
     "6": {
       "length": 30000.0,
@@ -261,7 +261,7 @@
       "id": 6,
       "to_node": 5,
       "diameter": 0.9,
-      "from_node": 6
+      "fr_node": 6
     },
     "11": {
       "length": 50000.0,
@@ -270,7 +270,7 @@
       "id": 11,
       "to_node": 18,
       "diameter": 1.1,
-      "from_node": 19
+      "fr_node": 19
     },
     "13": {
       "length": 100000.0,
@@ -279,7 +279,7 @@
       "id": 13,
       "to_node": 11,
       "diameter": 0.9,
-      "from_node": 10
+      "fr_node": 10
     },
     "5": {
       "length": 30000.0,
@@ -288,7 +288,7 @@
       "id": 5,
       "to_node": 7,
       "diameter": 0.9,
-      "from_node": 4
+      "fr_node": 4
     },
     "15": {
       "length": 100000.0,
@@ -297,7 +297,7 @@
       "id": 15,
       "to_node": 13,
       "diameter": 0.85,
-      "from_node": 10
+      "fr_node": 10
     },
     "16": {
       "length": 50000.0,
@@ -306,7 +306,7 @@
       "id": 16,
       "to_node": 15,
       "diameter": 0.85,
-      "from_node": 13
+      "fr_node": 13
     },
     "14": {
       "length": 50000.0,
@@ -315,7 +315,7 @@
       "id": 14,
       "to_node": 15,
       "diameter": 0.9,
-      "from_node": 11
+      "fr_node": 11
     },
     "7": {
       "length": 30000.0,
@@ -324,7 +324,7 @@
       "id": 7,
       "to_node": 5,
       "diameter": 0.9,
-      "from_node": 7
+      "fr_node": 7
     },
     "8": {
       "length": 30000.0,
@@ -333,7 +333,7 @@
       "id": 8,
       "to_node": 8,
       "diameter": 0.9,
-      "from_node": 5
+      "fr_node": 5
     },
     "17": {
       "length": 30000.0,
@@ -342,7 +342,7 @@
       "id": 17,
       "to_node": 21,
       "diameter": 0.5,
-      "from_node": 14
+      "fr_node": 14
     },
     "10": {
       "length": 30000.0,
@@ -351,7 +351,7 @@
       "id": 10,
       "to_node": 9,
       "diameter": 0.9,
-      "from_node": 8
+      "fr_node": 8
     },
     "19": {
       "length": 50000.0,
@@ -360,7 +360,7 @@
       "id": 19,
       "to_node": 23,
       "diameter": 1.1,
-      "from_node": 16
+      "fr_node": 16
     },
     "9": {
       "length": 30000.0,
@@ -369,7 +369,7 @@
       "id": 9,
       "to_node": 20,
       "diameter": 0.9,
-      "from_node": 8
+      "fr_node": 8
     },
     "18": {
       "length": 50000.0,
@@ -378,7 +378,7 @@
       "id": 18,
       "to_node": 22,
       "diameter": 1.1,
-      "from_node": 16
+      "fr_node": 16
     },
     "3": {
       "length": 30000.0,
@@ -387,7 +387,7 @@
       "id": 3,
       "to_node": 4,
       "diameter": 0.9,
-      "from_node": 3
+      "fr_node": 3
     }
   },
   "compressors": {
@@ -395,19 +395,19 @@
       "id": 1,
       "to_node": 3,
       "name": "c1",
-      "from_node": 2
+      "fr_node": 2
     },
     "2": {
       "id": 2,
       "to_node": 10,
       "name": "c2",
-      "from_node": 9
+      "fr_node": 9
     },
     "3": {
       "id": 3,
       "to_node": 16,
       "name": "c3",
-      "from_node": 15
+      "fr_node": 15
     }
   },
   "control_valves": {
@@ -415,7 +415,7 @@
       "to_node": 14,
       "cv_id": 1,
       "cv_name": "cv1",
-      "from_node": 13
+      "fr_node": 13
     }
   }
 }
