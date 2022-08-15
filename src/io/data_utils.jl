@@ -63,7 +63,7 @@ function process_data!(data::Dict{String,Any})
 
     defaults_exhaustive = [288.706, 0.6, 1.4, 5000.0, NaN, NaN, NaN, 0]
 
-    simulation_params = data["simulation_params"]
+    simulation_params = data["params"]
     
     key_map = Dict{String,String}()
     for k in keys(simulation_params)
@@ -84,7 +84,7 @@ function process_data!(data::Dict{String,Any})
     end
 
     # populating parameters
-    for i in 1:length(params_exhaustive)
+    for i in eachindex(params_exhaustive)
         param = params_exhaustive[i]
         default = defaults_exhaustive[i]
         if param == "units"
