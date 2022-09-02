@@ -228,7 +228,7 @@ function _eval_short_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, 
         pi_to = (is_to_pressure_node) ? get_potential(ss, x_dof[to_dof]) : x_dof[to_dof]  
 
         resistance = 1e-5
-        residual_dof[eqn_no] = pi_fr - pi_to - f * resistance
+        residual_dof[eqn_no] = pi_fr - pi_to - f * abs(f) * resistance
     end
 end
 
@@ -253,7 +253,7 @@ function _eval_short_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArr
 
         J[eqn_no, eqn_fr] = pi_dash_fr
         J[eqn_no, eqn_to] = -pi_dash_to
-        J[eqn_no, eqn_no] = - resistance
+        J[eqn_no, eqn_no] = - 2.0 * f * sign(f) * resistance
     end
 end
 
