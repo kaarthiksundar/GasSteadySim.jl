@@ -83,6 +83,10 @@ function process_data!(data::Dict{String,Any})
         pipe["area"] = pi * pipe["diameter"] * pipe["diameter"] * 0.25
     end
 
+    for (_, resistor) in get(data, "resistors", [])
+        resistor["area"] = pi * resistor["diameter"] * resistor["diameter"] * 0.25
+    end
+
     # populating parameters
     for i in eachindex(params_exhaustive)
         param = params_exhaustive[i]

@@ -69,6 +69,16 @@ function get_potential_derivative(ss::SteadySimulator, pressure)
     return b1 * pressure + b2 * pressure^2
 end 
 
+function get_resistor_potential(ss::SteadySimulator, pressure)
+    b1, b2 = get_eos_coeffs(ss) 
+    return b1 * pressure^2 + b2 * pressure^3
+end 
+
+function get_resistor_potential_derivative(ss::SteadySimulator, pressure)
+    b1, b2 = get_eos_coeffs(ss) 
+    return 2.0 * b1 * pressure + 3.0 * b2 * pressure^2
+end 
+
 TOL = 1.0e-7
 
 function get_nodal_control(ss::SteadySimulator,

@@ -72,6 +72,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["to_node"] = valve["to_node"]
         ref[name][id]["fr_node"] = valve["fr_node"]
         ref[name][id]["flow"] = NaN
+        ref[name][id]["max_pressure_differential"] = get(valve, "max_pressure_differential", NaN)
     end 
 
     for (i, resistor) in get(data, "resistors", [])
@@ -84,7 +85,8 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["fr_node"] = resistor["fr_node"]
         ref[name][id]["to_node"] = resistor["to_node"]
         ref[name][id]["drag"] = resistor["drag"]
-        ref[name][id]["diameter"] = resistor["drag"]
+        ref[name][id]["diameter"] = resistor["diameter"]
+        ref[name][id]["area"] = resistor["area"]
         ref[name][id]["flow"] = NaN
     end 
 
@@ -97,7 +99,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["id"] = id
         ref[name][id]["fr_node"] = loss_resistor["fr_node"]
         ref[name][id]["to_node"] = loss_resistor["to_node"]
-        ref[name][id]["pressure_drop"] = loss_resistor["p_loss"]
+        ref[name][id]["pressure_drop"] = loss_resistor["pressure_loss"]
         ref[name][id]["flow"] = NaN
     end 
 
@@ -329,11 +331,26 @@ function _add_pressure_node_flag!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[:is_pressure_node][compressor["fr_node"]] = true 
         ref[:is_pressure_node][compressor["to_node"]] = true
     end 
+
+    for (_, loss_resistor) in get(ref, :loss_resistor, [])
+        ref[:is_pressure_node][loss_resistor["fr_node"]] = true 
+        ref[:is_pressure_node][loss_resistor["to_node"]] = true 
+    end 
+
+    for (_, resistor) in get(ref, :resistor, []) 
+        ref[:is_pressure_node][resistor["fr_node"]] = true 
+        ref[:is_pressure_node][resistor["to_node"]] = true 
+    end 
 end 
 
 function _update_node_flag!(ref::Dict{Symbol,Any})
     for i in keys(ref[:is_pressure_node])
         ref[:is_pressure_node][i] = false
+    end 
+
+    for (_, loss_resistor) in get(ref, :loss_resistor, [])
+        ref[:is_pressure_node][loss_resistor["fr_node"]] = true 
+        ref[:is_pressure_node][loss_resistor["to_node"]] = true 
     end 
 end 
 
