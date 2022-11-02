@@ -81,7 +81,7 @@ function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, 
         elseif ctr == flow_control
             residual_dof[eqn_no] = x_dof[eqn_no] - cmpr_val
         elseif ctr == discharge_pressure_control
-            coeff = ref(ss, :is_pressure_node, to_node) ? cmpr_val : get_potetial(ss, cmpr_val)
+            coeff = ref(ss, :is_pressure_node, to_node) ? cmpr_val : get_potential(ss, cmpr_val)
             residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - coeff 
         end
     end
@@ -103,7 +103,7 @@ function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArra
         elseif ctr == flow_control
             residual_dof[eqn_no] = x_dof[eqn_no] - cv_val
         elseif ctr == discharge_pressure_control
-            coeff = ref(ss, :is_pressure_node, to_node) ? cv_val : get_potetial(ss, cv_val)
+            coeff = ref(ss, :is_pressure_node, to_node) ? cv_val : get_potential(ss, cv_val)
             residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - coeff
         end
     end
