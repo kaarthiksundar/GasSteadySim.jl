@@ -1,0 +1,10 @@
+{
+  "params": {
+    "Specific heat capacity ratio": 1.4,
+    "Temperature (K):": 288.70599999999996,
+    "Gas specific gravity (G):": 0.6,
+    "units (SI = 0, standard = 1)": 0.0,
+    "nominal_pressure": 3.5e6,
+    "nominal_length": 5e3
+  }
+}
