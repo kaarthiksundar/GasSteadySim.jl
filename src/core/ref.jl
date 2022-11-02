@@ -1,5 +1,8 @@
 function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, bc::Dict{Symbol,Any})
 
+    ref[:control_vars] = Dict{Int64, Any}()
+    num_control_vars = 0
+
     for (i, node) in get(data, "nodes", [])
         name = :node
         (!haskey(ref, name)) && (ref[name] = Dict())
@@ -12,6 +15,20 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["density"] = NaN 
         ref[name][id]["withdrawal"] = NaN
         ref[name][id]["potential"] = NaN
+
+        if haskey(bc[:node], id)
+            num_control_vars += 1
+            ref[:control_vars][num_control_vars] = (:node, id) ##
+
+            if ref[:node][id]["is_slack"] == 1 #slack
+                ref[:node][id]["withdrawal"] = NaN
+                ref[:node][id]["pressure"] = bc[:node][id]["val"]
+            else
+                ref[:node][id]["withdrawal"] = bc[:node][id]["val"]
+
+            end
+
+        end
     end
 
     for (i, pipe) in get(data, "pipes", [])
@@ -43,6 +60,8 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["c_ratio"] = NaN
         ref[name][id]["discharge_pressure"] = NaN
         ref[name][id]["flow"] = NaN
+        num_control_vars += 1
+        ref[:control_vars][num_control_vars] = (:compressor, id) ##
     end
 
     for (i, control_valve) in get(data, "control_valves", [])
@@ -113,6 +132,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["flow"] = NaN
     end 
 
+    ref[:total_control_vars] = num_control_vars
     return
 end
 

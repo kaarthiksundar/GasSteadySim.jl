@@ -25,6 +25,16 @@ function run_simulator!(ss::SteadySimulator;
     end
 
     sol_return = update_solution_fields_in_ref!(ss, soln.zero)
+
+    RHS = initialize_for_sensitivity_computations(ss)
+    assemble_mat!(ss, soln.zero, J0) # Jacobian at the solution
+    assemble_rhs_with_all_control_var!(ss, RHS, soln.zero)
+    @show RHS
+    calculate_sensitivities!(ss, J0, RHS)
+    @show RHS
+    Sensitivity_matrix = convert_sensitivities_to_given_units(ss, RHS)
+    @show Sensitivity_matrix
+
     populate_solution!(ss)
 
     unphysical_solution = ~isempty(sol_return[:compressors_with_neg_flow]) || 
