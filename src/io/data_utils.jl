@@ -22,7 +22,7 @@ function _parse_data(data_folder::AbstractString;
     bc_data = _parse_json(bc_file)
 
     if isfile(ig_file)
-        ig_data = parse_json(ig_file)
+        ig_data = _parse_json(ig_file)
         required_ig_fields = ["nodal_pressure", "pipe_flow", 
             "compressor_flow", "control_valve_flow", 
             "valve_flow", "resistor_flow", 
