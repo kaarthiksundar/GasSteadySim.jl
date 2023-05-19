@@ -9,6 +9,7 @@ struct SteadySimulator
     pu_eos_coeffs::Function
     pu_pressure_to_pu_density::Function
     pu_density_to_pu_pressure::Function
+    linear_approx::Bool
 end
 
 ref(ss::SteadySimulator) = ss.ref

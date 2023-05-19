@@ -11,7 +11,9 @@ function initialize_simulator(data_folder::AbstractString;
     return initialize_simulator(data; kwargs...)
 end
 
-function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::SteadySimulator
+function initialize_simulator(data::Dict{String,Any}; 
+    eos::Symbol=:ideal,
+    linear_approx::Bool=false)::SteadySimulator
     params, nominal_values = process_data!(data)
     make_per_unit!(data, params, nominal_values)
     bc = _build_bc(data)
@@ -40,10 +42,11 @@ function initialize_simulator(data::Dict{String,Any}; eos::Symbol=:ideal)::Stead
         nominal_values,
         params,
         ig, bc,
-        _get_eos(eos)...
+        _get_eos(eos)...,
+        linear_approx
     )
 
-    # _add_flow_bounds_to_ref!(ss)
+    _add_flow_bounds_to_ref!(ss)
 
     return ss
 end

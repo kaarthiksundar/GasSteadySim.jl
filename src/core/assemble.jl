@@ -61,7 +61,14 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
         c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
 
         resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
-        residual_dof[eqn_no] = pi_fr - pi_to - f * abs(f) * resistance
+        min_flow = pipe["min_flow"]
+        max_flow = pipe["max_flow"]
+        slope = max(abs(min_flow), max_flow)
+        if (ss.linear_approx)
+            residual_dof[eqn_no] = pi_fr - pi_to - f * slope * resistance
+        else 
+            residual_dof[eqn_no] = pi_fr - pi_to - f * abs(f) * resistance
+        end 
     end
 end
 
@@ -198,9 +205,17 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
         pi_dash_fr = (is_fr_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_fr]) : 1.0 
         pi_dash_to = (is_to_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_to]) : 1.0 
 
+        min_flow = pipe["min_flow"]
+        max_flow = pipe["max_flow"]
+        slope = max(abs(min_flow), max_flow)
+
         J[eqn_no, eqn_fr] = pi_dash_fr
         J[eqn_no, eqn_to] = -pi_dash_to
-        J[eqn_no, eqn_no] = -2.0 * f * sign(f) * resistance
+        if (ss.linear_approx)
+            J[eqn_no, eqn_no] = -1.0 * slope * resistance
+        else 
+            J[eqn_no, eqn_no] = -2.0 * f * sign(f) * resistance
+        end 
     end
 end
 
