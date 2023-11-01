@@ -14,7 +14,7 @@ function _build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
     for (i, value) in get(data, "boundary_pslack", [])
         id = parse(Int64, i)
         bc[:node][id] = Dict( 
-            "val" => value, 
+            "value" => value, 
             "control_type" => pressure_control
         )
     end 
@@ -22,7 +22,7 @@ function _build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
     for (i, value) in get(data, "boundary_nonslack_flow", [])
         id = parse(Int64, i)
         bc[:node][id] = Dict(
-            "val" => value,
+            "value" => value,
             "control_type" => flow_control
         )
     end 
@@ -33,7 +33,7 @@ function _build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
             @error "Simulator does not support compressor flow or discharge pressure specification for compressor boundary condition"
         end 
         bc[:compressor][id] = Dict(
-            "val" => value["value"],
+            "value" => value["value"],
             "control_type" => value["control_type"]
         )
     end 
@@ -46,7 +46,7 @@ function _build_bc(data::Dict{String,Any})::Dict{Symbol,Any}
             @error "Simulator does not support compressor flow or discharge pressure specification for control valve boundary condition"
         end 
         bc[:control_valve][id] = Dict(
-            "val" => value["value"],
+            "value" => value["value"],
             "control_type" => value["control_type"]
         )
     end 

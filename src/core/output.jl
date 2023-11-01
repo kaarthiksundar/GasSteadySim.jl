@@ -52,10 +52,7 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::Name
         sym, local_id = ref(ss, :dof, i)
         if sym == :node
             
-            ctrl_type, val = control(ss, :node, local_id)
-            if ctrl_type == flow_control
-                ref(ss, sym, local_id)["withdrawal"] = val
-            elseif ctrl_type == pressure_control 
+            if ref(ss, sym, local_id, "is_slack") == 1 
                 ref(ss, sym, local_id)["withdrawal"] = calculate_slack_withdrawal(ss, local_id, x_dof)
             end 
 
@@ -97,13 +94,6 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::Name
 
         if sym == :compressor
             ref(ss, sym, local_id)["flow"] = x_dof[i]
-            ctrl_type, val = control(ss, :compressor, local_id)
-            ref(ss, sym, local_id)["control_type"] = ctrl_type
-            to_node = ref(ss, sym, local_id)["to_node"]
-            fr_node = ref(ss, sym, local_id)["fr_node"]
-            ref(ss, sym, local_id)["discharge_pressure"] = ref(ss, :node, to_node)["pressure"]
-            ref(ss, sym, local_id)["c_ratio"] = 
-                ref(ss, :node, to_node)["pressure"] / ref(ss, :node, fr_node)["pressure"]  
             if x_dof[i] < 0 && ref(ss, sym, local_id)["c_ratio"] > 1.0
                 push!(negative_flow_in_compressors, local_id)
             end
@@ -111,13 +101,6 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::Name
 
         if sym == :control_valve 
             ref(ss, sym, local_id)["flow"] = x_dof[i]
-            ctrl_type, val = control(ss, :control_valve, local_id)
-            ref(ss, sym, local_id)["control_type"] = ctrl_type
-            to_node = ref(ss, sym, local_id)["to_node"]
-            fr_node = ref(ss, sym, local_id)["fr_node"]
-            ref(ss, sym, local_id)["discharge_pressure"] =  ref(ss, :node, to_node)["pressure"]
-            ref(ss, sym, local_id)["c_ratio"] = 
-                ref(ss, :node, to_node)["pressure"] / ref(ss, :node, fr_node)["pressure"] 
         end 
 
         (sym == :valve) && (ref(ss, sym, local_id)["flow"] = x_dof[i])

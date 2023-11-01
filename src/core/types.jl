@@ -6,6 +6,7 @@ struct SteadySimulator
     params::Dict{Symbol,Any}
     initial_guess::Dict{Symbol,Any}
     boundary_conditions::Dict{Symbol,Any}
+    potential_ratio_coefficients::Vector{Float64}
     pu_eos_coeffs::Function
     pu_pressure_to_pu_density::Function
     pu_density_to_pu_pressure::Function
@@ -45,15 +46,6 @@ initial_loss_resistor_flow(ss::SteadySimulator, id::Int64) =
 
 initial_short_pipe_flow(ss::SteadySimulator, id::Int64) = 
     ss.initial_guess[:short_pipe][id]
-
-function control(ss::SteadySimulator,
-    key::Symbol, id::Int64)::Tuple{CONTROL_TYPE,Float64}
-    (key == :node) && (return get_nodal_control(ss, id))
-    (key == :compressor) && (return get_compressor_control(ss, id))
-    (key == :control_valve) && (return get_control_valve_control(ss, id))
-    @error "control available only for nodes, compressors, and control_valves"
-    return CONTROL_TYPE::unknown_control, 0.0
-end
 
 get_eos_coeffs(ss::SteadySimulator) = ss.pu_eos_coeffs(nominal_values(ss), params(ss))
 get_pressure(ss::SteadySimulator, density) = ss.pu_density_to_pu_pressure(density, nominal_values(ss), params(ss))
