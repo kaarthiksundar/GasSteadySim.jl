@@ -39,7 +39,7 @@
       "y_coord": 6.73248116159,
       "x_coord": 48.459701438,
       "id": 20,
-      "slack_bool": 0,
+      "slack_bool": 1,
       "name": "n20"
     },
     "4": {
@@ -172,7 +172,7 @@
       "y_coord": 8.97279305602,
       "x_coord": 49.7619017195,
       "id": 40,
-      "slack_bool": 0,
+      "slack_bool": 1,
       "name": "n40"
     },
     "38": {
