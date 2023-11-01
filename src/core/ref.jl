@@ -1,5 +1,8 @@
 function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, bc::Dict{Symbol,Any})
 
+    ref[:control_vars] = Dict{Int64, Any}()
+    num_control_vars = 0
+
     for (i, node) in get(data, "nodes", [])
         name = :node
         (!haskey(ref, name)) && (ref[name] = Dict())
@@ -12,6 +15,14 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["density"] = NaN 
         ref[name][id]["withdrawal"] = NaN
         ref[name][id]["potential"] = NaN
+        (haskey(bc[:node], id)) && (num_control_vars += 1)
+        if ref[:node][id]["is_slack"] == 1 
+            ref[:control_vars][num_control_vars] = (:node, id, "pressure") #
+            ref[:node][id]["pressure"] = bc[:node][id]["value"]
+        else
+            ref[:node][id]["withdrawal"] = haskey(bc[:node], id) ? bc[:node][id]["value"] : 0.0 
+            ref[:control_vars][num_control_vars] = (:node, id, "injection") 
+        end
     end
 
     for (i, pipe) in get(data, "pipes", [])
@@ -39,10 +50,11 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["id"] = id
         ref[name][id]["to_node"] = compressor["to_node"]
         ref[name][id]["fr_node"] = compressor["fr_node"]
-        ref[name][id]["control_type"] = unknown_control
-        ref[name][id]["c_ratio"] = NaN
-        ref[name][id]["discharge_pressure"] = NaN
+        ref[name][id]["control_type"] = bc[name][id]["control_type"]
+        ref[name][id]["c_ratio"] = bc[name][id]["value"]
         ref[name][id]["flow"] = NaN
+        num_control_vars += 1
+        ref[:control_vars][num_control_vars] = (:compressor, id, "c_ratio")
     end
 
     for (i, control_valve) in get(data, "control_valves", [])
@@ -55,10 +67,11 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["id"] = id
         ref[name][id]["to_node"] = control_valve["to_node"]
         ref[name][id]["fr_node"] = control_valve["fr_node"]
-        ref[name][id]["control_type"] = unknown_control
-        ref[name][id]["c_ratio"] = NaN
-        ref[name][id]["discharge_pressure"] = NaN
+        ref[name][id]["control_type"] = bc[name][id]["control_type"]
+        ref[name][id]["c_ratio"] = bc[name][id]["value"]
         ref[name][id]["flow"] = NaN
+        num_control_vars += 1
+        ref[:control_vars][num_control_vars] = (:control_valve, id, "c_ratio")
     end 
 
     for (i, valve) in get(data, "valves", []) 
@@ -113,6 +126,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["flow"] = NaN
     end 
 
+    ref[:total_control_vars] = num_control_vars 
     return
 end
 
@@ -329,6 +343,11 @@ function _add_pressure_node_flag!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
         ref[:is_pressure_node][compressor["fr_node"]] = true 
         ref[:is_pressure_node][compressor["to_node"]] = true
     end 
+
+    for (_, control_valve) in get(ref, :control_valve, [])
+        ref[:is_pressure_node][control_valve["fr_node"]] = true 
+        ref[:is_pressure_node][control_valve["to_node"]] = true
+    end
 end 
 
 function _update_node_flag!(ref::Dict{Symbol,Any})

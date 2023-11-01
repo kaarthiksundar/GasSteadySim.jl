@@ -26,16 +26,14 @@ end
 function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     @inbounds for (id, junction) in ref(ss, :node)
         eqn_no = junction["dof"]
-        ctrl_type, val = control(ss, :node, id) # val is withdrawal or pressure
-
-        if ctrl_type == pressure_control
-            coeff = (ref(ss, :is_pressure_node, id)) ? val : get_potential(ss, val)
+        
+        if junction["is_slack"] == 1
+            pressure = junction["pressure"]
+            potential = get_potential(ss, pressure)
+            coeff = ref(ss, :is_pressure_node, id) ? pressure : potential
             residual_dof[eqn_no] = x_dof[eqn_no] - coeff
-
-        end
-
-        if  ctrl_type == flow_control
-            r = (-val) # inflow is positive convention
+        else
+            r = (-junction["withdrawal"]) # inflow is positive convention
             out_edge = ref(ss, :outgoing_dofs, id)
             in_edge = ref(ss, :incoming_dofs, id)
             r -= sum(x_dof[e] for e in out_edge; init=0.0) 
@@ -68,44 +66,34 @@ end
 """residual computation for compressor"""
 function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     (!haskey(ref(ss), :compressor)) && (return)
-    @inbounds for (id, comp) in ref(ss, :compressor)
+    @inbounds for (_, comp) in ref(ss, :compressor)
         eqn_no = comp["dof"] 
-        ctr, cmpr_val = control(ss, :compressor, id)
+        alpha = comp["c_ratio"]
         to_node = comp["to_node"]
         fr_node = comp["fr_node"]
-        
-        if ctr  == c_ratio_control
-            is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
-            val = (is_pressure_eq) ? cmpr_val : cmpr_val^2
-            residual_dof[eqn_no] = val * x_dof[ref(ss, :node, fr_node, "dof")] -  x_dof[ref(ss, :node, to_node, "dof")]
-        elseif ctr == flow_control
-            residual_dof[eqn_no] = x_dof[eqn_no] - cmpr_val
-        elseif ctr == discharge_pressure_control
-            coeff = ref(ss, :is_pressure_node, to_node) ? cmpr_val : get_potential(ss, cmpr_val)
-            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - coeff 
-        end
+        c_0, c_1, c_2, c_3 = ss.potential_ratio_coefficients
+        alpha_eff = c_0 + c_1 * alpha + c_2 * alpha^2 + c_3 * alpha^3
+
+        is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
+        val = (is_pressure_eq) ? alpha : alpha_eff
+        residual_dof[eqn_no] = val * x_dof[ref(ss, :node, fr_node, "dof")] -  x_dof[ref(ss, :node, to_node, "dof")]
     end
 end
 
 """residual computation for control_valves"""
 function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     (!haskey(ref(ss), :control_valve)) && (return)
-    @inbounds for (cv_id, cv) in ref(ss, :control_valve)
+    @inbounds for (_, cv) in ref(ss, :control_valve)
         eqn_no = cv["dof"] 
-        ctr, cv_val = control(ss, :control_valve, cv_id)
+        alpha = cv["c_ratio"]
         to_node = cv["to_node"]
         fr_node = cv["fr_node"]
-        
-        if ctr  == c_ratio_control
-            is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
-            val = (is_pressure_eq) ? cv_val : cv_val^2
-            residual_dof[eqn_no] = val * x_dof[ref(ss, :node, fr_node, "dof")]  - x_dof[ref(ss, :node, to_node, "dof")]
-        elseif ctr == flow_control
-            residual_dof[eqn_no] = x_dof[eqn_no] - cv_val
-        elseif ctr == discharge_pressure_control
-            coeff = ref(ss, :is_pressure_node, to_node) ? cv_val : get_potential(ss, cv_val)
-            residual_dof[eqn_no] = x_dof[ref(ss, :node, to_node, "dof")] - coeff
-        end
+        c_0, c_1, c_2, c_3 = ss.potential_ratio_coefficients
+        alpha_eff = c_0 + c_1 * alpha + c_2 * alpha^2 + c_3 * alpha^3
+
+        is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
+        val = (is_pressure_eq) ? alpha : alpha_eff
+        residual_dof[eqn_no] = val * x_dof[ref(ss, :node, fr_node, "dof")]  - x_dof[ref(ss, :node, to_node, "dof")]
     end
 end
 
@@ -157,14 +145,10 @@ function _eval_junction_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray
         J::AbstractArray)
     @inbounds for (id, junction) in ref(ss, :node)
         eqn_no = junction["dof"]
-        ctrl_type, _ = control(ss, :node, id) # val is withdrawal or pressure
         
-        if ctrl_type == pressure_control
+        if junction["is_slack"] == 1
             J[eqn_no, eqn_no] = 1
-            continue
-        end
-
-        if  ctrl_type == flow_control
+        else
             out_edge = ref(ss, :outgoing_dofs, id)
             in_edge = ref(ss, :incoming_dofs, id)
             for e in out_edge
@@ -208,23 +192,20 @@ end
 function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
         J::AbstractArray)
     (!haskey(ref(ss), :compressor)) && (return)
-    @inbounds for (id, comp) in ref(ss, :compressor)
+    @inbounds for (_, comp) in ref(ss, :compressor)
         eqn_no = comp["dof"] 
-        ctr, cmpr_val = control(ss, :compressor, id)
+        alpha = comp["c_ratio"]
         to_node = comp["to_node"]
         fr_node = comp["fr_node"]
         eqn_to = ref(ss, :node, to_node, "dof")
         eqn_fr = ref(ss, :node, fr_node, "dof")
         is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
-        
-        if ctr  == c_ratio_control
-            J[eqn_no, eqn_to] = -1
-            J[eqn_no, eqn_fr] = (is_pressure_eq) ? (cmpr_val) : (cmpr_val^2)
-        elseif ctr == flow_control
-            J[eqn_no, eqn_no] = 1
-        elseif ctr == discharge_pressure_control
-            J[eqn_no, eqn_to] = 1
-        end
+
+        c_0, c_1, c_2, c_3 = ss.potential_ratio_coefficients
+        alpha_eff = c_0 + c_1 * alpha + c_2 * alpha^2 + c_3 * alpha^3
+
+        J[eqn_no, eqn_to] = -1
+        J[eqn_no, eqn_fr] = is_pressure_eq ? alpha : alpha_eff
     end
 end
 
@@ -232,30 +213,27 @@ end
 function _eval_control_valve_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
         J::AbstractArray)
     (!haskey(ref(ss), :control_valve)) && (return)
-    @inbounds for (cv_id, cv) in ref(ss, :control_valve)
+    @inbounds for (_, cv) in ref(ss, :control_valve)
         eqn_no = cv["dof"] 
-        ctr, cv_val = control(ss, :control_valve, cv_id)
+        alpha = cv["c_ratio"]
         to_node = cv["to_node"]
         fr_node = cv["fr_node"]
         eqn_to = ref(ss, :node, to_node, "dof")
         eqn_fr = ref(ss, :node, fr_node, "dof")
         is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
+
+        c_0, c_1, c_2, c_3 = ss.potential_ratio_coefficients
+        alpha_eff = c_0 + c_1 * alpha + c_2 * alpha^2 + c_3 * alpha^3
         
-        if ctr  == c_ratio_control
-            J[eqn_no, eqn_to] = -1
-            J[eqn_no, eqn_fr] = is_pressure_eq ? (cv_val) : (cv_val^2)
-        elseif ctr == flow_control
-            J[eqn_no, eqn_no] = 1
-        elseif ctr == discharge_pressure_control
-            J[eqn_no, eqn_to] = 1
-        end
+        J[eqn_no, eqn_to] = -1
+        J[eqn_no, eqn_fr] = is_pressure_eq ? alpha : alpha_eff
     end
 end
 
 """in place Jacobian computation for short pipes"""
 function _eval_short_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
         J::AbstractArray)
-    @inbounds for (key, pipe) in get(ref(ss), :short_pipe, [])
+    @inbounds for (_, pipe) in get(ref(ss), :short_pipe, [])
         eqn_no = pipe["dof"] 
         f = x_dof[eqn_no]
         fr_node = pipe["fr_node"]  
