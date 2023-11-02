@@ -6,7 +6,7 @@
     solver_return = run_simulator!(ss)
 
     @show solver_return.iterations
-    exact_sol = GasSteadySim._parse_json("data/GasLib-40-multiple-slacks/exact_sol_ideal.json")
+    exact_sol = GasSteadySim._parse_json("solution-files/GasLib-40-multiple-slacks/exact_sol_ideal.json")
     _check_correctness(ss.sol, exact_sol)
 
 
@@ -18,7 +18,7 @@ end
     solver_return = run_simulator!(ss)
 
     @show solver_return.iterations
-    exact_sol = GasSteadySim._parse_json("data/GasLib-40-multiple-slacks/exact_sol_simple_cnga.json")
+    exact_sol = GasSteadySim._parse_json("solution-files/GasLib-40-multiple-slacks/exact_sol_simple_cnga.json")
     _check_correctness(ss.sol, exact_sol)
 end
 
@@ -29,6 +29,6 @@ end
     solver_return = run_simulator!(ss)
 
     @show solver_return.iterations
-    exact_sol = GasSteadySim._parse_json("data/GasLib-40-multiple-slacks/exact_sol_full_cnga.json")
+    exact_sol = GasSteadySim._parse_json("solution-files/GasLib-40-multiple-slacks/exact_sol_full_cnga.json")
     _check_correctness(ss.sol, exact_sol)
 end
