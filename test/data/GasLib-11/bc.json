@@ -1,0 +1,31 @@
+{
+  "boundary_valve": {
+    "off": [],
+    "on": [
+      1
+    ]
+  },
+  "boundary_pslack": {
+    "6": 7.0e6
+  },
+  "boundary_compressor": {
+    "1": {
+      "control_type": 0,
+      "value": 1.5
+    },
+    "2": {
+      "control_type": 0,
+      "value": 1.5
+    }
+  },
+  "boundary_nonslack_flow": {
+    "10": 26.166666666666668,
+    "7": -23.96430555555556,
+    "11": 17.444444444444443,
+    "9": 21.805555555555557
+  },
+  "boundary_control_valve": {
+    "off": [],
+    "on": []
+  }
+}

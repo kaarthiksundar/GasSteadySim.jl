@@ -63,30 +63,6 @@ end
 
 TOL = 1.0e-7
 
-function get_nodal_control(ss::SteadySimulator,
-    id::Int64)::Tuple{CONTROL_TYPE,Float64}
-    if !haskey(ss.boundary_conditions[:node], id)
-        return flow_control, 0.0
-    end
-    control_type = ss.boundary_conditions[:node][id]["control_type"]
-    val = ss.boundary_conditions[:node][id]["val"]
-    return control_type, val
-end
-
-function get_compressor_control(ss::SteadySimulator,
-    id::Int64)::Tuple{CONTROL_TYPE,Float64}
-    control_type = ss.boundary_conditions[:compressor][id]["control_type"]
-    val = ss.boundary_conditions[:compressor][id]["val"]
-    return CONTROL_TYPE(control_type), val
-end
-
-function get_control_valve_control(ss::SteadySimulator,
-    id::Int64)::Tuple{CONTROL_TYPE,Float64}
-    control_type = ss.boundary_conditions[:control_valve][id]["control_type"]
-    val = ss.boundary_conditions[:control_valve][id]["val"]
-    return CONTROL_TYPE(control_type), val
-end
-
 @enum CONTROL_TYPE begin
     c_ratio_control = 0
     discharge_pressure_control = 1
