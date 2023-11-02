@@ -1,0 +1,292 @@
+{
+  "nodes": {
+    "4": {
+      "name": "N04",
+      "x_coord": 800.0,
+      "min_pressure": 4.0e6,
+      "id": 4,
+      "max_pressure": 7.0e6,
+      "elevation": 0.0,
+      "slack_bool": 0,
+      "y_coord": 0.0
+    },
+    "1": {
+      "name": "N01",
+      "x_coord": 400.0,
+      "min_pressure": 4.0e6,
+      "id": 1,
+      "max_pressure": 7.0e6,
+      "elevation": 0.0,
+      "slack_bool": 0,
+      "y_coord": 0.0
+    },
+    "2": {
+      "name": "N02",
+      "x_coord": 600.0,
+      "min_pressure": 4.0e6,
+      "id": 2,
+      "max_pressure": 7.0e6,
+      "elevation": 0.0,
+      "slack_bool": 0,
+      "y_coord": 100.0
+    },
+    "6": {
+      "name": "entry01",
+      "x_coord": 0.0,
+      "min_pressure": 4.0e6,
+      "id": 6,
+      "max_pressure": 7.0e6,
+      "elevation": 0.0,
+      "slack_bool": 1,
+      "y_coord": 0.0
+    },
+    "11": {
+      "name": "exit03",
+      "x_coord": 1141.0,
+      "min_pressure": 4.0e6,
+      "id": 11,
+      "max_pressure": 6.0e6,
+      "elevation": 0.0,
+      "slack_bool": 0,
+      "y_coord": -141.0
+    },
+    "5": {
+      "name": "N05",
+      "x_coord": 1000.0,
+      "min_pressure": 4.0e6,
+      "id": 5,
+      "max_pressure": 7.0e6,
+      "elevation": 0.0,
+      "slack_bool": 0,
+      "y_coord": 0.0
+    },
+    "7": {
+      "name": "entry02",
+      "x_coord": 600.0,
+      "min_pressure": 4.0e6,
+      "id": 7,
+      "max_pressure": 7.0e6,
+      "elevation": 0.0,
+      "slack_bool": 0,
+      "y_coord": -300.0
+    },
+    "8": {
+      "name": "entry03",
+      "x_coord": 200.0,
+      "min_pressure": 4.0e6,
+      "id": 8,
+      "max_pressure": 7.0e6,
+      "elevation": 0.0,
+      "slack_bool": 0,
+      "y_coord": 0.0
+    },
+    "10": {
+      "name": "exit02",
+      "x_coord": 1141.0,
+      "min_pressure": 4.0e6,
+      "id": 10,
+      "max_pressure": 6.0e6,
+      "elevation": 0.0,
+      "slack_bool": 0,
+      "y_coord": 141.0
+    },
+    "9": {
+      "name": "exit01",
+      "x_coord": 600.0,
+      "min_pressure": 4.0e6,
+      "id": 9,
+      "max_pressure": 7.0e6,
+      "elevation": 0.0,
+      "slack_bool": 0,
+      "y_coord": 300.0
+    },
+    "3": {
+      "name": "N03",
+      "x_coord": 600.0,
+      "min_pressure": 4.0e6,
+      "id": 3,
+      "max_pressure": 7.0e6,
+      "elevation": 0.0,
+      "slack_bool": 0,
+      "y_coord": -100.0
+    }
+  },
+  "short_pipes": {},
+  "valves": {
+    "1": {
+      "name": "V01_N01_N03",
+      "to_node": 3,
+      "max_flow": 239.8611,
+      "id": 1,
+      "max_pressure_differential": 1.2e7,
+      "fr_node": 1,
+      "min_flow": -239.8611
+    }
+  },
+  "receipts": {
+    "1": {
+      "name": "entry01",
+      "id": 1,
+      "node_id": 6
+    },
+    "2": {
+      "name": "entry02",
+      "id": 2,
+      "node_id": 7
+    }
+  },
+  "pipes": {
+    "3": {
+      "friction_factor": 0.01372452402130078,
+      "diameter": 0.5,
+      "min_flow": -239.8611,
+      "length": 55000.0,
+      "name": "pipe03_entry02_N03",
+      "min_pressure": 4.0e6,
+      "to_node": 3,
+      "max_flow": 239.8611,
+      "id": 3,
+      "max_pressure": 7.0e6,
+      "fr_node": 7
+    },
+    "4": {
+      "friction_factor": 0.01372452402130078,
+      "diameter": 0.5,
+      "min_flow": -239.8611,
+      "length": 55000.0,
+      "name": "pipe04_N02_exit01",
+      "min_pressure": 4.0e6,
+      "to_node": 9,
+      "max_flow": 239.8611,
+      "id": 4,
+      "max_pressure": 7.0e6,
+      "fr_node": 2
+    },
+    "1": {
+      "friction_factor": 0.01372452402130078,
+      "diameter": 0.5,
+      "min_flow": -239.8611,
+      "length": 55000.0,
+      "name": "pipe01_entry01_entry03",
+      "min_pressure": 4.0e6,
+      "to_node": 8,
+      "max_flow": 239.8611,
+      "id": 1,
+      "max_pressure": 7.0e6,
+      "fr_node": 6
+    },
+    "5": {
+      "friction_factor": 0.01372452402130078,
+      "diameter": 0.5,
+      "min_flow": -239.8611,
+      "length": 55000.0,
+      "name": "pipe05_N02_N04",
+      "min_pressure": 4.0e6,
+      "to_node": 4,
+      "max_flow": 239.8611,
+      "id": 5,
+      "max_pressure": 7.0e6,
+      "fr_node": 2
+    },
+    "2": {
+      "friction_factor": 0.01372452402130078,
+      "diameter": 0.5,
+      "min_flow": -239.8611,
+      "length": 55000.0,
+      "name": "pipe02_N01_N02",
+      "min_pressure": 4.0e6,
+      "to_node": 2,
+      "max_flow": 239.8611,
+      "id": 2,
+      "max_pressure": 7.0e6,
+      "fr_node": 1
+    },
+    "6": {
+      "friction_factor": 0.01372452402130078,
+      "diameter": 0.5,
+      "min_flow": -239.8611,
+      "length": 55000.0,
+      "name": "pipe06_N03_N04",
+      "min_pressure": 4.0e6,
+      "to_node": 4,
+      "max_flow": 239.8611,
+      "id": 6,
+      "max_pressure": 7.0e6,
+      "fr_node": 3
+    },
+    "7": {
+      "friction_factor": 0.01372452402130078,
+      "diameter": 0.5,
+      "min_flow": -239.8611,
+      "length": 55000.0,
+      "name": "pipe07_N05_exit02",
+      "min_pressure": 4.0e6,
+      "to_node": 10,
+      "max_flow": 239.8611,
+      "id": 7,
+      "max_pressure": 7.0e6,
+      "fr_node": 5
+    },
+    "8": {
+      "friction_factor": 0.01372452402130078,
+      "diameter": 0.5,
+      "min_flow": -239.8611,
+      "length": 55000.0,
+      "name": "pipe08_N05_exit03",
+      "min_pressure": 4.0e6,
+      "to_node": 11,
+      "max_flow": 239.8611,
+      "id": 8,
+      "max_pressure": 7.0e6,
+      "fr_node": 5
+    }
+  },
+  "resistors": {},
+  "loss_resistors": {},
+  "compressors": {
+    "1": {
+      "min_flow": 0.0,
+      "name": "CS01_entry03_N01",
+      "to_node": 1,
+      "max_flow": 239.8611,
+      "max_c_ratio": 1.75,
+      "id": 1,
+      "min_c_ratio": 1.0,
+      "fuel_node": 1,
+      "internal_bypass_required": 1,
+      "max_power": 1.80853756583798e8,
+      "fr_node": 8
+    },
+    "2": {
+      "min_flow": 0.0,
+      "name": "CS02_N04_N05",
+      "to_node": 5,
+      "max_flow": 239.8611,
+      "max_c_ratio": 1.75,
+      "id": 2,
+      "min_c_ratio": 1.0,
+      "fuel_node": 5,
+      "internal_bypass_required": 1,
+      "max_power": 1.80853756583798e8,
+      "fr_node": 4
+    }
+  },
+  "control_valves": {},
+  "deliveries": {
+    "1": {
+      "name": "exit01",
+      "id": 1,
+      "node_id": 9
+    },
+    "2": {
+      "name": "exit02",
+      "id": 2,
+      "node_id": 10
+    },
+    "3": {
+      "name": "exit03",
+      "id": 3,
+      "node_id": 11
+    }
+  }
+}
