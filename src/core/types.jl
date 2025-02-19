@@ -12,6 +12,11 @@ struct SteadySimulator
     pu_density_to_pu_pressure::Function
 end
 
+mutable struct MissingDataException <: Exception 
+    var::AbstractString 
+end 
+Base.showerror(io::IO, e::MissingDataException) = print(io, "Data: ", e.var, "missing!")
+
 ref(ss::SteadySimulator) = ss.ref
 ref(ss::SteadySimulator, key::Symbol) = ss.ref[key]
 ref(ss::SteadySimulator, key::Symbol, id::Int64) = ss.ref[key][id]
