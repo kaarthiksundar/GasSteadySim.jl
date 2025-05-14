@@ -29,8 +29,8 @@ function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, re
         
         if junction["is_slack"] == 1
             pressure = junction["pressure"]
-            potential = get_potential(ss, pressure)
-            coeff = ref(ss, :is_pressure_node, id) ? pressure : potential
+            # coeff = ref(ss, :is_pressure_node, id) ? pressure : potential
+            coeff = pressure
             residual_dof[eqn_no] = x_dof[eqn_no] - coeff
         else
             r = (-junction["withdrawal"]) # inflow is positive convention
@@ -43,6 +43,36 @@ function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, re
     end
 end
 
+# p'(x) = G(p, f) => pp'(x)  = pG(p,f) => p_fr^2/2 - p_to^2/2  + (L/2) * ( p_fr*G(p_fr, f) + p_to*G(p_to, f)) = 0
+function G(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real)::Real
+    rho = get_density(ss, p)
+    rho_prime = 1
+    t1 = rho^3*c2 - rho * beta * f * abs(f)
+    t2 = rho^2 - c1 * (f^2) * rho_prime
+    return t1/t2
+end
+
+function dGdp(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real)::Real
+    rho = get_density(ss, p)
+    rho_prime = get_density_prime(ss, p)
+    rho_double_prime = get_density_double_prime(ss, p)
+    t1 = rho^3*c2 - rho * beta * f * abs(f)
+    t2 = rho^2 - c1 * (f^2) * rho_prime
+    t1_prime = (3 * (rho^2) * c2 - beta * f * abs(f)) * rho_prime
+    t2_prime = 2 * rho * rho_prime - c1 * (f^2) * rho_double_prime
+    return (t1_prime * t2 - t1 * t2_prime) / (t2^2)    
+end
+
+function dGdf(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real)::Real
+    rho = get_density(ss, p)
+    rho_prime = get_density_prime(ss, p)
+    t1 = rho^3*c2 - rho * beta * f * abs(f)
+    t2 = rho^2 - c1 * (f^2) * rho_prime
+    t1_prime = - 2 * rho * beta * abs(f)
+    t2_prime = - 2  * c1 * f * rho_prime
+    return (t1_prime * t2 - t1 * t2_prime) / (t2^2)  
+end
+
 """residual computation for pipes"""
 function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     @inbounds for (_, pipe) in ref(ss, :pipe)
@@ -52,14 +82,20 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
         to_node = pipe["to_node"]
         fr_dof = ref(ss, :node, fr_node, "dof")
         to_dof = ref(ss, :node, to_node, "dof")
-        is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
-        is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
-        pi_fr = (is_fr_pressure_node) ? get_potential(ss, x_dof[fr_dof]) : x_dof[fr_dof] 
-        pi_to = (is_to_pressure_node) ? get_potential(ss, x_dof[to_dof]) : x_dof[to_dof] 
-        c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
+        sin_incline = -0.065
+        R1 = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
+        # 8 degree inclination = sin(theta) approx 0.14
+        # 2 degree = sin(theta) approx 0.034
+        R2 = sin_incline *  R1 / nominal_values(ss, :froude_num)^2
 
-        resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
-        residual_dof[eqn_no] = pi_fr - pi_to - f * abs(f) * resistance
+        
+        inertial_bool = true
+        gravity_bool = true
+        beta = R1 * pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
+        c1 = R1 * inertial_bool
+        c2 = R2 * gravity_bool
+
+        residual_dof[eqn_no] =  x_dof[fr_dof]^2/2  - x_dof[to_dof]^2/2  + pipe["length"]* 0.5 * ( x_dof[fr_dof] * G(ss, x_dof[fr_dof], f, beta, c1, c2) + x_dof[to_dof] * G(ss, x_dof[to_dof], f, beta, c1, c2) )
     end
 end
 
@@ -106,13 +142,8 @@ function _eval_short_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, 
         to_node = pipe["to_node"]
         fr_dof = ref(ss, :node, fr_node, "dof")
         to_dof = ref(ss, :node, to_node, "dof")
-        is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
-        is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
-        pi_fr = (is_fr_pressure_node) ? get_potential(ss, x_dof[fr_dof]) : x_dof[fr_dof] 
-        pi_to = (is_to_pressure_node) ? get_potential(ss, x_dof[to_dof]) : x_dof[to_dof]  
-
         resistance = 1e-5
-        residual_dof[eqn_no] = pi_fr - pi_to - f * abs(f) * resistance
+        residual_dof[eqn_no] = x_dof[fr_dof]^2/2  - x_dof[to_dof]^2/2 - f * abs(f) * resistance
     end
 end
 
@@ -127,15 +158,7 @@ function _eval_pass_through_equations!(ss::SteadySimulator, x_dof::AbstractArray
             to_node = comp["to_node"]
             fr_dof = ref(ss, :node, fr_node, "dof")
             to_dof = ref(ss, :node, to_node, "dof")
-            is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
-            is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
-            if (is_fr_pressure_node && is_to_pressure_node)
-                residual_dof[eqn_no] = x_dof[fr_dof] - x_dof[to_dof]
-            else
-                pi_fr = (is_fr_pressure_node) ? get_potential(ss, x_dof[fr_dof]) : x_dof[fr_dof] 
-                pi_to = (is_to_pressure_node) ? get_potential(ss, x_dof[to_dof]) : x_dof[to_dof] 
-                residual_dof[eqn_no] = pi_fr - pi_to
-            end 
+            residual_dof[eqn_no] = x_dof[fr_dof] - x_dof[to_dof]
         end 
     end 
 end 
@@ -173,18 +196,24 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
 
         eqn_fr = ref(ss, :node, fr_node, "dof")
         eqn_to = ref(ss, :node, to_node, "dof")
-        is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
-        is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
-        
-        c = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
-        resistance = pipe["friction_factor"] * pipe["length"] * c / (2 * pipe["diameter"] * pipe["area"]^2)
 
-        pi_dash_fr = (is_fr_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_fr]) : 1.0 
-        pi_dash_to = (is_to_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_to]) : 1.0 
+        sin_incline = -0.065
+        R1 = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
+        # 8 degree inclination = sin(theta) approx 0.14
+        # 2 degree = sin(theta) approx 0.034
+        R2 = sin_incline *  R1 / nominal_values(ss, :froude_num)^2
 
-        J[eqn_no, eqn_fr] = pi_dash_fr
-        J[eqn_no, eqn_to] = -pi_dash_to
-        J[eqn_no, eqn_no] = -2.0 * f * sign(f) * resistance
+    
+
+        inertial_bool = true
+        gravity_bool = true
+        beta = R1 * pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
+        c1 = R1 * inertial_bool
+        c2 = R2 * gravity_bool
+
+        J[eqn_no, eqn_fr] = x_dof[eqn_fr] + pipe["length"] * 0.5 * (G(ss, x_dof[eqn_fr], f, beta, c1, c2) + x_dof[eqn_fr] * dGdp(ss, x_dof[eqn_fr], f, beta, c1, c2) )
+        J[eqn_no, eqn_to] = -x_dof[eqn_to] + pipe["length"] * 0.5 * (G(ss, x_dof[eqn_to], f, beta, c1, c2) + x_dof[eqn_to] * dGdp(ss, x_dof[eqn_to], f, beta, c1, c2) )
+        J[eqn_no, eqn_no] = pipe["length"] * 0.5 * (x_dof[eqn_to] * dGdf(ss, x_dof[eqn_to], f, beta, c1, c2) + x_dof[eqn_to] * dGdf(ss, x_dof[eqn_to], f, beta, c1, c2))
     end
 end
 
@@ -241,16 +270,11 @@ function _eval_short_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArr
 
         eqn_fr = ref(ss, :node, fr_node, "dof")
         eqn_to = ref(ss, :node, to_node, "dof")
-        is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
-        is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
         
         resistance = 1e-5
 
-        pi_dash_fr = (is_fr_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_fr]) : 1.0 
-        pi_dash_to = (is_to_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_to]) : 1.0 
-
-        J[eqn_no, eqn_fr] = pi_dash_fr
-        J[eqn_no, eqn_to] = -pi_dash_to
+        J[eqn_no, eqn_fr] = x_dof[eqn_fr]
+        J[eqn_no, eqn_to] = -x_dof[eqn_to]
         J[eqn_no, eqn_no] = -2.0 * f * sign(f) * resistance
     end
 end
@@ -267,18 +291,9 @@ function _eval_pass_through_equations_mat!(ss::SteadySimulator, x_dof::AbstractA
             fr_node = comp["fr_node"]
             eqn_to = ref(ss, :node, to_node, "dof")
             eqn_fr = ref(ss, :node, fr_node, "dof")
-            is_fr_pressure_node = ref(ss, :is_pressure_node, fr_node)
-            is_to_pressure_node = ref(ss, :is_pressure_node, to_node)
 
-            if (is_fr_pressure_node && is_to_pressure_node)
-                J[eqn_no, eqn_to] = -1.0
-                J[eqn_no, eqn_fr] = 1.0
-            else
-                pi_dash_fr = (is_fr_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_fr]) : 1.0 
-                pi_dash_to = (is_to_pressure_node) ? get_potential_derivative(ss, x_dof[eqn_to]) : 1.0
-                J[eqn_no, eqn_to] = -pi_dash_to
-                J[eqn_no, eqn_fr] = pi_dash_fr
-            end 
+            J[eqn_no, eqn_to] = -1.0
+            J[eqn_no, eqn_fr] = 1.0
         end 
     end 
 end 

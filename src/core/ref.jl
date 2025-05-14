@@ -15,7 +15,6 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["pressure"] = NaN
         ref[name][id]["density"] = NaN 
         ref[name][id]["withdrawal"] = NaN
-        ref[name][id]["potential"] = NaN
         (haskey(bc[:node], id)) && (num_control_vars += 1)
         if ref[:node][id]["is_slack"] == 1 
             ref[:control_vars][num_control_vars] = (:node, id, "pressure") #
@@ -360,18 +359,18 @@ end
 
 function _add_pressure_node_flag!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
     ref[:is_pressure_node] = Dict{Int64, Bool}(
-        i => false for i in keys(ref[:node])
+        i => true for i in keys(ref[:node])
     )
 
-    for (_, compressor) in get(ref, :compressor, [])
-        ref[:is_pressure_node][compressor["fr_node"]] = true 
-        ref[:is_pressure_node][compressor["to_node"]] = true
-    end 
+    # for (_, compressor) in get(ref, :compressor, [])
+    #     ref[:is_pressure_node][compressor["fr_node"]] = true 
+    #     ref[:is_pressure_node][compressor["to_node"]] = true
+    # end 
 
-    for (_, control_valve) in get(ref, :control_valve, [])
-        ref[:is_pressure_node][control_valve["fr_node"]] = true 
-        ref[:is_pressure_node][control_valve["to_node"]] = true
-    end
+    # for (_, control_valve) in get(ref, :control_valve, [])
+    #     ref[:is_pressure_node][control_valve["fr_node"]] = true 
+    #     ref[:is_pressure_node][control_valve["to_node"]] = true
+    # end
 end 
 
 function _update_node_flag!(ref::Dict{Symbol,Any})

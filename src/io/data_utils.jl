@@ -5,7 +5,7 @@ function _parse_data(data_folder::AbstractString;
     network_file = data_folder * "network.json"
     params_file = data_folder * "params"
     bc_file = data_folder * "bc"
-    ig_file = data_folder * initial_guess_filename * ".json"
+    ig_file = data_folder * initial_guess_filename
     if (:params in case_types)
         params_file = params_file * "_" * case_name * ".json"
     else 
@@ -17,11 +17,16 @@ function _parse_data(data_folder::AbstractString;
     else 
         bc_file = bc_file * ".json"
     end 
+    @info "Using params file $params_file"
+    @info "Using network file $network_file"
+    @info "Using bc file $bc_file"
     network_data = _parse_json(network_file)
     params_data = _parse_json(params_file)
     bc_data = _parse_json(bc_file)
+    
 
     if isfile(ig_file)
+        @info "Using ig file $ig_file"
         ig_data = _parse_json(ig_file)
         required_ig_fields = ["nodal_pressure", "pipe_flow", 
             "compressor_flow", "control_valve_flow", 
@@ -30,7 +35,11 @@ function _parse_data(data_folder::AbstractString;
         filter!(p -> p.first in required_ig_fields, ig_data)
         data = merge(network_data, params_data, bc_data, ig_data)
     else
-        @debug "initial guess file not provided, the code will generate an initial guess"
+        if initial_guess_filename == ""
+            @info "initial guess file not provided, will generate an initial guess"
+        else
+            @info "initial guess file $ig_file not found, will generate an initial guess"
+        end
         data = merge(network_data, params_data, bc_data)
     end
     
@@ -123,9 +132,10 @@ function process_data!(data::Dict{String,Any})
     # other parameter calculations
     # universal gas constant (J/mol/K)
     params[:R] = 8.314
+    params[:gravity] = 9.81 #(m/s^2)
     # molecular mass of natural gas (kg/mol): M_g = M_a * G
     params[:gas_molar_mass] = 0.02896 * params[:gas_specific_gravity]
-    params[:warning] = "R, temperature are in SI units. Rest are dimensionless"
+    params[:warning] = "R, temperature, gravity are in SI units. Rest are dimensionless"
 
     # sound speed (m/s): v = sqrt(R_g * T); 
     # R_g = R/M_g = R/M_a/G; R_g is specific gas constant; g-gas, a-air
@@ -155,6 +165,7 @@ function process_data!(data::Dict{String,Any})
     nominal_values[:mass_flow] = nominal_values[:mass_flux] * nominal_values[:area]
     nominal_values[:euler_num] = nominal_values[:pressure] / (nominal_values[:density] * nominal_values[:sound_speed]^2)
     nominal_values[:mach_num] = nominal_values[:velocity] / nominal_values[:sound_speed]
+    nominal_values[:froude_num] = nominal_values[:velocity] / sqrt(params[:gravity] * nominal_values[:length])
     
     return params, nominal_values
 end

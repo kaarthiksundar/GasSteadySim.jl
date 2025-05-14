@@ -28,15 +28,15 @@ function initialize_simulator(data::Dict{String,Any};
         _add_loss_resistor_info_at_nodes!,
         _add_short_pipe_info_at_nodes!,
         _add_index_info!,
-        _add_incident_dofs_info_at_nodes!, 
+        _add_incident_dofs_info_at_nodes!,
         _add_pressure_node_flag!
         ]
     )
     
     # irrespective of the use_potential_formulation variable, ideal EoS always uses potentials 
-    (eos == :ideal) && (_update_node_flag!(ref))
+    # (eos == :ideal) && (_update_node_flag!(ref))
     # if eos is not ideal, then based on the flag call the node flag update function
-    (use_potential_formulation == true) && (_update_node_flag!(ref))
+    # (use_potential_formulation == true) && (_update_node_flag!(ref))
 
     ig = _build_ig(data) 
 

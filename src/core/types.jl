@@ -56,14 +56,14 @@ get_eos_coeffs(ss::SteadySimulator) = ss.pu_eos_coeffs(nominal_values(ss), param
 get_pressure(ss::SteadySimulator, density) = ss.pu_density_to_pu_pressure(density, nominal_values(ss), params(ss))
 get_density(ss::SteadySimulator, pressure) = ss.pu_pressure_to_pu_density(pressure, nominal_values(ss), params(ss))
 
-function get_potential(ss::SteadySimulator, pressure)
+function get_density_prime(ss::SteadySimulator, pressure)
     b1, b2 = get_eos_coeffs(ss)
-    return (b1/2) * pressure^2 + (b2/3) * pressure^3
+    return b1  + (2 * b2 * pressure)
 end 
 
-function get_potential_derivative(ss::SteadySimulator, pressure) 
+function get_density_double_prime(ss::SteadySimulator, pressure) 
     b1, b2 = get_eos_coeffs(ss)
-    return b1 * pressure + b2 * pressure^2
+    return 2 * b2
 end 
 
 TOL = 1.0e-7
@@ -90,6 +90,5 @@ struct SolverReturn
     time::Float64 
     solution::Vector{Float64}
     negative_flow_in_compressors::Vector{Int64}
-    negative_potentials_in_nodes::Vector{Int64}
     pressure_domain_not_satisfied_in_nodes::Vector{Int64}
 end 

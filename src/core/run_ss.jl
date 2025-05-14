@@ -30,14 +30,13 @@ function run_simulator!(
             soln.iterations, 
             soln.residual_norm, 
             time, soln.zero, 
-            Int[], Int[], Int[])
+            Int[], Int[])
     end
 
     sol_return = update_solution_fields_in_ref!(ss, soln.zero)
     populate_solution!(ss)
 
-    unphysical_solution = ~isempty(sol_return[:compressors_with_neg_flow]) || 
-    ~isempty(sol_return[:nodes_with_neg_potential])
+    unphysical_solution = ~isempty(sol_return[:compressors_with_neg_flow])
 
     if unphysical_solution
         is_unique = isempty(sol_return[:nodes_with_pressure_not_in_domain])
@@ -47,7 +46,6 @@ function run_simulator!(
                 soln.residual_norm, 
                 time, soln.zero, 
                 sol_return[:compressors_with_neg_flow], 
-                sol_return[:nodes_with_neg_potential],
                 sol_return[:nodes_with_pressure_not_in_domain])
         else 
             return SolverReturn(unphysical_solution, 
@@ -55,7 +53,6 @@ function run_simulator!(
                 soln.residual_norm, 
                 time, soln.zero, 
                 sol_return[:compressors_with_neg_flow], 
-                sol_return[:nodes_with_neg_potential],
                 sol_return[:nodes_with_pressure_not_in_domain])
         end 
     end 
@@ -65,7 +62,6 @@ function run_simulator!(
         soln.residual_norm, 
         time, soln.zero, 
         sol_return[:compressors_with_neg_flow], 
-        sol_return[:nodes_with_neg_potential],
         sol_return[:nodes_with_pressure_not_in_domain])
 end
 

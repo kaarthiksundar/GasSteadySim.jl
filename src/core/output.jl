@@ -1,34 +1,34 @@
-function find_ub(ss::SteadySimulator, val::Float64, ub::Float64)::Float64
-    @assert ub > 0
-    while get_potential(ss, ub) < val
-        ub = 1.5 * ub
-    end 
-    return ub
-end 
+# function find_ub(ss::SteadySimulator, val::Float64, ub::Float64)::Float64
+#     @assert ub > 0
+#     while get_potential(ss, ub) < val
+#         ub = 1.5 * ub
+#     end 
+#     return ub
+# end 
 
-function find_lb(ss::SteadySimulator, val::Float64, lb::Float64)::Float64
-    @assert lb < 0
-    while get_potential(ss, lb) > val
-        lb = 1.5 * lb
-    end 
-    return lb
-end 
+# function find_lb(ss::SteadySimulator, val::Float64, lb::Float64)::Float64
+#     @assert lb < 0
+#     while get_potential(ss, lb) > val
+#         lb = 1.5 * lb
+#     end 
+#     return lb
+# end 
 
-function bisect(ss::SteadySimulator, lb::Float64, ub::Float64, val::Float64)::Float64  
-    @assert ub > lb
-    mb = 1.0
-    while (ub - lb) > TOL
-        mb = (ub + lb) / 2.0
-        if get_potential(ss, mb) > val
-            ub = mb
-        else
-            lb = mb 
-        end
-    end
-    return mb
-end
+# function bisect(ss::SteadySimulator, lb::Float64, ub::Float64, val::Float64)::Float64  
+#     @assert ub > lb
+#     mb = 1.0
+#     while (ub - lb) > TOL
+#         mb = (ub + lb) / 2.0
+#         if get_potential(ss, mb) > val
+#             ub = mb
+#         else
+#             lb = mb 
+#         end
+#     end
+#     return mb
+# end
 
-invert_positive_potential(ss::SteadySimulator, val::Float64) = bisect(ss, 0.0, find_ub(ss, val, 1.0), val)
+# invert_positive_potential(ss::SteadySimulator, val::Float64) = bisect(ss, 0.0, find_ub(ss, val, 1.0), val)
 
 function calculate_slack_withdrawal(ss::SteadySimulator, id::Int, x_dof::Array)::Float64
     slack_withdrawal = 0.0
@@ -45,7 +45,6 @@ end
 function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::NamedTuple
     flow_direction = true
     negative_flow_in_compressors = Int[]
-    negative_nodal_potentials = Int[]
     nodal_pressures_not_in_domain = Int[]
 
     for i in 1:length(x_dof)
@@ -56,32 +55,13 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::Name
                 ref(ss, sym, local_id)["withdrawal"] = calculate_slack_withdrawal(ss, local_id, x_dof)
             end 
 
-            pi_val = (ref(ss, :is_pressure_node, local_id)) ? get_potential(ss, x_dof[i]) : x_dof[i] 
-            if (pi_val < 0)
-                push!(negative_nodal_potentials, local_id)
-                ref(ss, sym, local_id)["potential"] = pi_val 
-                ref(ss, sym, local_id)["pressure"] = NaN 
-                ref(ss, sym, local_id)["density"] = NaN
-                continue 
-            end
+            p_val = x_dof[i] 
 
-            if (pi_val == 0.0)
-                ref(ss, sym, local_id)["potential"] = 0.0
-                ref(ss, sym, local_id)["pressure"] = 0.0
-                ref(ss, sym, local_id)["density"] = 0.0
-                continue
-            end 
-
-            p_val = (ref(ss, :is_pressure_node, local_id)) ? x_dof[i] : invert_positive_potential(ss, x_dof[i])
-
-            # pi_val > 0 is always true when we get to this point 
-            if (p_val < 0 && pi_val > 0)
+            if (p_val < 0)
                 push!(nodal_pressures_not_in_domain, local_id)
-                ref(ss, sym, local_id)["potential"] = pi_val 
                 ref(ss, sym, local_id)["pressure"] = NaN 
                 ref(ss, sym, local_id)["density"] = NaN
             else  
-                ref(ss, sym, local_id)["potential"] = pi_val
                 ref(ss, sym, local_id)["pressure"] = p_val
                 ref(ss, sym, local_id)["density"] = get_density(ss, p_val)
             end
@@ -112,7 +92,6 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::Name
     return (
             pipe_flow_dir = flow_direction, 
             compressors_with_neg_flow = negative_flow_in_compressors, 
-            nodes_with_neg_potential = negative_nodal_potentials, 
             nodes_with_pressure_not_in_domain = nodal_pressures_not_in_domain
         )
 end
