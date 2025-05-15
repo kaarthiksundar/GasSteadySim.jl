@@ -67,10 +67,15 @@ end
 
 # overloaded run_simulator
 function run_simulator!(ss::SteadySimulator; 
+    gravity_bool::Bool=false, 
+    inertial_bool::Bool=false,
     method::Symbol=:newton,
     iteration_limit::Int64=2000, 
     show_trace_flag::Bool=false,
     kwargs...)::SolverReturn
+
+    ss.params[:inertial_bool] = inertial_bool
+    ss.params[:gravity_bool] = gravity_bool
     
     x_guess = _create_initial_guess_dof!(ss)
     df = prepare_for_solve!(ss)

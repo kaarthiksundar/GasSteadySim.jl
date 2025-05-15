@@ -13,7 +13,6 @@ end
 
 function initialize_simulator(data::Dict{String,Any}; 
     eos::Symbol=:ideal,
-    use_potential_formulation::Bool=false, 
     potential_ratio_coefficients::Vector{Float64}=[0.0, 0.0, 1.0, 0.0])::SteadySimulator
     params, nominal_values = process_data!(data)
     make_per_unit!(data, params, nominal_values)

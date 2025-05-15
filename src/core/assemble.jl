@@ -49,7 +49,8 @@ function G(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real
     rho_prime = 1
     t1 = rho^3*c2 - rho * beta * f * abs(f)
     t2 = rho^2 - c1 * (f^2) * rho_prime
-    return t1/t2
+    # return t1/t2
+    return -beta * f * abs(f) / rho
 end
 
 function dGdp(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real)::Real
@@ -60,7 +61,8 @@ function dGdp(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::R
     t2 = rho^2 - c1 * (f^2) * rho_prime
     t1_prime = (3 * (rho^2) * c2 - beta * f * abs(f)) * rho_prime
     t2_prime = 2 * rho * rho_prime - c1 * (f^2) * rho_double_prime
-    return (t1_prime * t2 - t1 * t2_prime) / (t2^2)    
+    # return (t1_prime * t2 - t1 * t2_prime) / (t2^2)
+    return     beta * f * abs(f) * rho_prime / (rho^2)
 end
 
 function dGdf(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real)::Real
@@ -70,7 +72,9 @@ function dGdf(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::R
     t2 = rho^2 - c1 * (f^2) * rho_prime
     t1_prime = - 2 * rho * beta * abs(f)
     t2_prime = - 2  * c1 * f * rho_prime
-    return (t1_prime * t2 - t1 * t2_prime) / (t2^2)  
+    # return (t1_prime * t2 - t1 * t2_prime) / (t2^2)  
+    return -2 * beta * abs(f) / rho
+
 end
 
 """residual computation for pipes"""
@@ -82,20 +86,17 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
         to_node = pipe["to_node"]
         fr_dof = ref(ss, :node, fr_node, "dof")
         to_dof = ref(ss, :node, to_node, "dof")
-        sin_incline = -0.065
+        sin_incline = 0.065
         R1 = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
         # 8 degree inclination = sin(theta) approx 0.14
         # 2 degree = sin(theta) approx 0.034
         R2 = sin_incline *  R1 / nominal_values(ss, :froude_num)^2
-
-        
-        inertial_bool = true
-        gravity_bool = true
         beta = R1 * pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
-        c1 = R1 * inertial_bool
-        c2 = R2 * gravity_bool
+        c1 = R1 * params(ss, :inertial_bool)
+        c2 = R2 * params(ss, :gravity_bool)
 
         residual_dof[eqn_no] =  x_dof[fr_dof]^2/2  - x_dof[to_dof]^2/2  + pipe["length"]* 0.5 * ( x_dof[fr_dof] * G(ss, x_dof[fr_dof], f, beta, c1, c2) + x_dof[to_dof] * G(ss, x_dof[to_dof], f, beta, c1, c2) )
+        # residual_dof[eqn_no] =  x_dof[fr_dof]^2/2  - x_dof[to_dof]^2/2  - pipe["length"]* beta * f * abs(f)
     end
 end
 
@@ -197,23 +198,24 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
         eqn_fr = ref(ss, :node, fr_node, "dof")
         eqn_to = ref(ss, :node, to_node, "dof")
 
-        sin_incline = -0.065
+        sin_incline = 0.065
         R1 = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
         # 8 degree inclination = sin(theta) approx 0.14
         # 2 degree = sin(theta) approx 0.034
         R2 = sin_incline *  R1 / nominal_values(ss, :froude_num)^2
 
-    
-
-        inertial_bool = true
-        gravity_bool = true
         beta = R1 * pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
-        c1 = R1 * inertial_bool
-        c2 = R2 * gravity_bool
+        c1 = R1 * params(ss, :inertial_bool)
+        c2 = R2 * params(ss, :gravity_bool)
 
         J[eqn_no, eqn_fr] = x_dof[eqn_fr] + pipe["length"] * 0.5 * (G(ss, x_dof[eqn_fr], f, beta, c1, c2) + x_dof[eqn_fr] * dGdp(ss, x_dof[eqn_fr], f, beta, c1, c2) )
         J[eqn_no, eqn_to] = -x_dof[eqn_to] + pipe["length"] * 0.5 * (G(ss, x_dof[eqn_to], f, beta, c1, c2) + x_dof[eqn_to] * dGdp(ss, x_dof[eqn_to], f, beta, c1, c2) )
         J[eqn_no, eqn_no] = pipe["length"] * 0.5 * (x_dof[eqn_to] * dGdf(ss, x_dof[eqn_to], f, beta, c1, c2) + x_dof[eqn_to] * dGdf(ss, x_dof[eqn_to], f, beta, c1, c2))
+
+        # J[eqn_no, eqn_fr] = x_dof[eqn_fr]
+        # J[eqn_no, eqn_to] = -x_dof[eqn_to]
+        # J[eqn_no, eqn_no] = - 2  * beta *  pipe["length"] * abs(f)
+
     end
 end
 

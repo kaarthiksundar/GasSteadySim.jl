@@ -27,6 +27,7 @@ include("core/assemble.jl")
 include("core/run_ss.jl")
 include("core/output.jl")
 include("io/writer.jl")
+include("core/calculate_residual_ideal_gas_exact_integral.jl")
 include("core/export.jl")
 
 end # module
