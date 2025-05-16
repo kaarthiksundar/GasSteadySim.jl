@@ -86,8 +86,10 @@ function pipe_equations_no_gravity_no_inertia(ss::SteadySimulator, x_dof::Abstra
         R1 = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
         
         beta = pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
+        p_fr = sqrt(x_dof[fr_dof])
+        p_to = sqrt(x_dof[to_dof])
         
-        var = abs(x_dof[fr_dof]^2/2  - x_dof[to_dof]^2/2  - pipe["length"] * beta * R1 * f * abs(f) )
+        var = abs(p_fr^2/2  - p_to^2/2  - pipe["length"] * beta * R1 * f * abs(f) )
         residual = max(residual, var)
     end
     return residual
@@ -104,9 +106,10 @@ function pipe_equations_no_gravity_with_inertia(ss::SteadySimulator, x_dof::Abst
         to_dof = ref(ss, :node, to_node, "dof")
         R1 = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
         beta = pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
-        
+        p_fr = sqrt(x_dof[fr_dof])
+        p_to = sqrt(x_dof[to_dof])
 
-        var =  abs(x_dof[fr_dof]^2/2  - x_dof[to_dof]^2/2   - R1*(f^2)*(1/2) *log( x_dof[fr_dof]^2 / x_dof[to_dof]^2 )- pipe["length"] * beta * R1 * f * abs(f))
+        var =  abs(p_fr^2/2  - p_to^2/2   - R1*(f^2)*(1/2) *log( p_fr^2 / p_to^2 )- pipe["length"] * beta * R1 * f * abs(f))
         residual = max(residual, var)
     end
     return residual
@@ -127,8 +130,10 @@ function pipe_equations_with_gravity_no_inertia(ss::SteadySimulator, x_dof::Abst
         sin_incline = 0.065
         R2 = sin_incline *  R1 / nominal_values(ss, :froude_num)^2
         beta = pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
+        p_fr = sqrt(x_dof[fr_dof])
+        p_to = sqrt(x_dof[to_dof])
 
-        var =  abs( exp(2 * R2 * pipe["length"]) * x_dof[fr_dof]^2/2  - x_dof[to_dof]^2/2  + pipe["length"] * beta * R1 * f * abs(f) * (exp(2 * R2 * pipe["length"]) - 1) /(2 * R2 * pipe["length"]) )
+        var =  abs( exp(2 * R2 * pipe["length"]) * p_fr^2/2  - p_to^2/2  + pipe["length"] * beta * R1 * f * abs(f) * (exp(2 * R2 * pipe["length"]) - 1) /(2 * R2 * pipe["length"]) )
         residual = max(residual, var)
     end
     return residual
@@ -149,11 +154,13 @@ function pipe_equations_with_gravity_with_inertia(ss::SteadySimulator, x_dof::Ab
         sin_incline = 0.065
         R2 = sin_incline *  R1 / nominal_values(ss, :froude_num)^2
         beta = pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
+        p_fr = sqrt(x_dof[fr_dof])
+        p_to = sqrt(x_dof[to_dof])
         
         var1 = beta * nominal_values(ss, :froude_num)^2 * f * abs(f)
         var2 = R1 * (f^2)
-        var = abs((var1 - var2) * log( (x_dof[to_dof]^2 - var1) / (x_dof[fr_dof]^2 - var1) ) 
-        + 2 * var2 * log( (x_dof[to_dof]) / (x_dof[fr_dof]) ) - 2 * pipe["length"] * beta * R1 * f * abs(f))
+        var = abs((var1 - var2) * log( (p_to^2 - var1) / (p_fr^2 - var1) ) 
+        + 2 * var2 * log( (p_to) / (p_fr) ) - 2 * pipe["length"] * beta * R1 * f * abs(f))
         residual = max(residual, var)
     end
     return residual

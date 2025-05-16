@@ -44,13 +44,14 @@ function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, re
 end
 
 # p'(x) = G(p, f) => pp'(x)  = pG(p,f) => p_fr^2/2 - p_to^2/2  + (L/2) * ( p_fr*G(p_fr, f) + p_to*G(p_to, f)) = 0
+# p'(x) = G(p, f) => 2pp'(x)  = 2pG(p,f)  => with y = p^2 that  y'(x) = 2 * sqrt(y)*G(sqrt(y), f)
 function G(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real)::Real
     rho = get_density(ss, p)
     rho_prime = 1
     t1 = rho^3*c2 - rho * beta * f * abs(f)
     t2 = rho^2 - c1 * (f^2) * rho_prime
-    # return t1/t2
-    return -beta * f * abs(f) / rho
+    return t1/t2
+    # return -beta * f * abs(f) / rho
 end
 
 function dGdp(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real)::Real
@@ -61,8 +62,8 @@ function dGdp(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::R
     t2 = rho^2 - c1 * (f^2) * rho_prime
     t1_prime = (3 * (rho^2) * c2 - beta * f * abs(f)) * rho_prime
     t2_prime = 2 * rho * rho_prime - c1 * (f^2) * rho_double_prime
-    # return (t1_prime * t2 - t1 * t2_prime) / (t2^2)
-    return     beta * f * abs(f) * rho_prime / (rho^2)
+    return (t1_prime * t2 - t1 * t2_prime) / (t2^2)
+    # return     beta * f * abs(f) * rho_prime / (rho^2)
 end
 
 function dGdf(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real)::Real
@@ -72,8 +73,8 @@ function dGdf(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::R
     t2 = rho^2 - c1 * (f^2) * rho_prime
     t1_prime = - 2 * rho * beta * abs(f)
     t2_prime = - 2  * c1 * f * rho_prime
-    # return (t1_prime * t2 - t1 * t2_prime) / (t2^2)  
-    return -2 * beta * abs(f) / rho
+    return (t1_prime * t2 - t1 * t2_prime) / (t2^2)  
+    # return -2 * beta * abs(f) / rho
 
 end
 
@@ -94,8 +95,19 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
         beta = R1 * pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
         c1 = R1 * params(ss, :inertial_bool)
         c2 = R2 * params(ss, :gravity_bool)
+        p_fr = sqrt(x_dof[fr_dof])
+        p_to = sqrt(x_dof[to_dof])
 
-        residual_dof[eqn_no] =  x_dof[fr_dof]^2/2  - x_dof[to_dof]^2/2  + pipe["length"]* 0.5 * ( x_dof[fr_dof] * G(ss, x_dof[fr_dof], f, beta, c1, c2) + x_dof[to_dof] * G(ss, x_dof[to_dof], f, beta, c1, c2) )
+
+        # residual_dof[eqn_no] =  x_dof[fr_dof]^2/2  - x_dof[to_dof]^2/2  + pipe["length"]* 0.5 * ( x_dof[fr_dof] * G(ss, x_dof[fr_dof], f, beta, c1, c2) + x_dof[to_dof] * G(ss, x_dof[to_dof], f, beta, c1, c2) )
+
+        # p^2 as dof form
+        residual_dof[eqn_no] =  x_dof[fr_dof]  - x_dof[to_dof]  + pipe["length"]* 0.5 * ( 2 * p_fr * G(ss, p_fr, f, beta, c1, c2) + 2 * p_to * G(ss, p_to, f, beta, c1, c2) )
+
+        # pi - pj form
+        # residual_dof[eqn_no] =  x_dof[fr_dof] - x_dof[to_dof]  + pipe["length"]* 0.5 * (  G(ss, x_dof[fr_dof], f, beta, c1, c2) +  G(ss, x_dof[to_dof], f, beta, c1, c2) )
+
+        # exact form with dof p 
         # residual_dof[eqn_no] =  x_dof[fr_dof]^2/2  - x_dof[to_dof]^2/2  - pipe["length"]* beta * f * abs(f)
     end
 end
@@ -113,6 +125,7 @@ function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, 
 
         is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
         val = (is_pressure_eq) ? alpha : alpha_eff
+        val = alpha^2
         residual_dof[eqn_no] = val * x_dof[ref(ss, :node, fr_node, "dof")] -  x_dof[ref(ss, :node, to_node, "dof")]
     end
 end
@@ -197,6 +210,8 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
 
         eqn_fr = ref(ss, :node, fr_node, "dof")
         eqn_to = ref(ss, :node, to_node, "dof")
+        p_fr = sqrt(x_dof[eqn_fr])
+        p_to = sqrt(x_dof[eqn_to])
 
         sin_incline = 0.065
         R1 = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
@@ -208,10 +223,22 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
         c1 = R1 * params(ss, :inertial_bool)
         c2 = R2 * params(ss, :gravity_bool)
 
-        J[eqn_no, eqn_fr] = x_dof[eqn_fr] + pipe["length"] * 0.5 * (G(ss, x_dof[eqn_fr], f, beta, c1, c2) + x_dof[eqn_fr] * dGdp(ss, x_dof[eqn_fr], f, beta, c1, c2) )
-        J[eqn_no, eqn_to] = -x_dof[eqn_to] + pipe["length"] * 0.5 * (G(ss, x_dof[eqn_to], f, beta, c1, c2) + x_dof[eqn_to] * dGdp(ss, x_dof[eqn_to], f, beta, c1, c2) )
-        J[eqn_no, eqn_no] = pipe["length"] * 0.5 * (x_dof[eqn_to] * dGdf(ss, x_dof[eqn_to], f, beta, c1, c2) + x_dof[eqn_to] * dGdf(ss, x_dof[eqn_to], f, beta, c1, c2))
+        # J[eqn_no, eqn_fr] = x_dof[eqn_fr] + pipe["length"] * 0.5 * (G(ss, x_dof[eqn_fr], f, beta, c1, c2) + x_dof[eqn_fr] * dGdp(ss, x_dof[eqn_fr], f, beta, c1, c2) )
+        # J[eqn_no, eqn_to] = -x_dof[eqn_to] + pipe["length"] * 0.5 * (G(ss, x_dof[eqn_to], f, beta, c1, c2) + x_dof[eqn_to] * dGdp(ss, x_dof[eqn_to], f, beta, c1, c2) )
+        # J[eqn_no, eqn_no] = pipe["length"] * 0.5 * (x_dof[eqn_to] * dGdf(ss, x_dof[eqn_to], f, beta, c1, c2) + x_dof[eqn_to] * dGdf(ss, x_dof[eqn_to], f, beta, c1, c2))
 
+        # p^2 as dof
+        J[eqn_no, eqn_fr] = 1 + pipe["length"] * 0.5 * (2 * G(ss, p_fr, f, beta, c1, c2) + 2 * p_fr * dGdp(ss, p_fr, f, beta, c1, c2) ) / (2 * p_fr)
+        J[eqn_no, eqn_to] = -1 + pipe["length"] * 0.5 * (2 * G(ss, p_to, f, beta, c1, c2) + 2 * p_to * dGdp(ss, p_to, f, beta, c1, c2) ) / (2 * p_to)
+        J[eqn_no, eqn_no] = pipe["length"] * 0.5 * ( 2 * p_to * dGdf(ss, p_to, f, beta, c1, c2) + 2 * p_fr * dGdf(ss, p_fr, f, beta, c1, c2))
+
+
+        # pi - pj form with p as dof
+        # J[eqn_no, eqn_fr] = 1 + pipe["length"] * 0.5 * (dGdp(ss, x_dof[eqn_fr], f, beta, c1, c2) )
+        # J[eqn_no, eqn_to] = -1 + pipe["length"] * 0.5 * (dGdp(ss, x_dof[eqn_to], f, beta, c1, c2) )
+        # J[eqn_no, eqn_no] = pipe["length"] * 0.5 * (dGdf(ss, x_dof[eqn_to], f, beta, c1, c2) + dGdf(ss, x_dof[eqn_to], f, beta, c1, c2))
+
+        # exact with p as dof
         # J[eqn_no, eqn_fr] = x_dof[eqn_fr]
         # J[eqn_no, eqn_to] = -x_dof[eqn_to]
         # J[eqn_no, eqn_no] = - 2  * beta *  pipe["length"] * abs(f)
@@ -236,7 +263,7 @@ function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::AbstractArr
         alpha_eff = c_0 + c_1 * alpha + c_2 * alpha^2 + c_3 * alpha^3
 
         J[eqn_no, eqn_to] = -1
-        J[eqn_no, eqn_fr] = is_pressure_eq ? alpha : alpha_eff
+        J[eqn_no, eqn_fr] = alpha^2  #is_pressure_eq ? alpha : alpha_eff
     end
 end
 
