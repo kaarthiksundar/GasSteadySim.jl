@@ -1,81 +1,11 @@
 
-
-
-# """function assembles the residuals"""
-# function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
-#     _eval_junction_equations!(ss, x_dof, residual_dof)
-#     _eval_pipe_equations!(ss, x_dof, residual_dof)
-#     _eval_compressor_equations!(ss, x_dof, residual_dof)
-#     _eval_control_valve_equations!(ss, x_dof, residual_dof)
-#     _eval_short_pipe_equations!(ss, x_dof, residual_dof)
-#     _eval_pass_through_equations!(ss, x_dof, residual_dof)
-# end
-
-# """function assembles the Jacobians"""
-# function assemble_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArray)
-#     fill!(J, 0)
-#     _eval_junction_equations_mat!(ss, x_dof, J)
-#     _eval_pipe_equations_mat!(ss, x_dof, J)
-#     _eval_compressor_equations_mat!(ss, x_dof, J)
-#     _eval_control_valve_equations_mat!(ss, x_dof, J)
-#     _eval_short_pipe_equations_mat!(ss, x_dof, J)
-#     _eval_pass_through_equations_mat!(ss, x_dof, J)
-# end
-
-# """residual computation for junctions"""
-# function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
-#     @inbounds for (id, junction) in ref(ss, :node)
-#         eqn_no = junction["dof"]
-        
-#         if junction["is_slack"] == 1
-#             pressure = junction["pressure"]
-#             # coeff = ref(ss, :is_pressure_node, id) ? pressure : potential
-#             coeff = pressure
-#             residual_dof[eqn_no] = x_dof[eqn_no] - coeff
-#         else
-#             r = (-junction["withdrawal"]) # inflow is positive convention
-#             out_edge = ref(ss, :outgoing_dofs, id)
-#             in_edge = ref(ss, :incoming_dofs, id)
-#             r -= sum(x_dof[e] for e in out_edge; init=0.0) 
-#             r += sum(x_dof[e] for e in in_edge; init=0.0)
-#             residual_dof[eqn_no] = r
-#         end
-#     end
-# end
-
-# # p'(x) = G(p, f) => pp'(x)  = pG(p,f) => p_fr^2/2 - p_to^2/2  + (L/2) * ( p_fr*G(p_fr, f) + p_to*G(p_to, f)) = 0
-# function G(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real)::Real
-#     rho = get_density(ss, p)
-#     rho_prime = 1
-#     t1 = rho^3*c2 - rho * beta * f * abs(f)
-#     t2 = rho^2 - c1 * (f^2) * rho_prime
-#     return t1/t2
-# end
-
-# function dGdp(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real)::Real
-#     rho = get_density(ss, p)
-#     rho_prime = get_density_prime(ss, p)
-#     rho_double_prime = get_density_double_prime(ss, p)
-#     t1 = rho^3*c2 - rho * beta * f * abs(f)
-#     t2 = rho^2 - c1 * (f^2) * rho_prime
-#     t1_prime = (3 * (rho^2) * c2 - beta * f * abs(f)) * rho_prime
-#     t2_prime = 2 * rho * rho_prime - c1 * (f^2) * rho_double_prime
-#     return (t1_prime * t2 - t1 * t2_prime) / (t2^2)    
-# end
-
-# function dGdf(ss::SteadySimulator, p::Real, f::Real, beta::Real, c1::Real, c2::Real)::Real
-#     rho = get_density(ss, p)
-#     rho_prime = get_density_prime(ss, p)
-#     t1 = rho^3*c2 - rho * beta * f * abs(f)
-#     t2 = rho^2 - c1 * (f^2) * rho_prime
-#     t1_prime = - 2 * rho * beta * abs(f)
-#     t2_prime = - 2  * c1 * f * rho_prime
-#     return (t1_prime * t2 - t1 * t2_prime) / (t2^2)  
-# end
+function pressure_from_dof(dof_val)
+    return sqrt(dof_val)
+end
 
 """residual computation for pipes"""
-function pipe_equations_no_gravity_no_inertia(ss::SteadySimulator, x_dof::AbstractArray)::Real
-    residual = 0
+function pipe_equations_no_gravity_no_inertia(ss::SteadySimulator, x_dof::AbstractArray)::Tuple{Real, Real}
+    err = Vector{Float64}()
     @inbounds for (_, pipe) in ref(ss, :pipe)
         eqn_no = pipe["dof"]
         f = x_dof[eqn_no]
@@ -83,20 +13,24 @@ function pipe_equations_no_gravity_no_inertia(ss::SteadySimulator, x_dof::Abstra
         to_node = pipe["to_node"]
         fr_dof = ref(ss, :node, fr_node, "dof")
         to_dof = ref(ss, :node, to_node, "dof")
-        R1 = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
+
+        R1 = nominal_values(ss, :mach_num)^2 / (nominal_values(ss, :euler_num) * pipe["area"]^2)  
+        beta = pipe["friction_factor"]  / (2 * pipe["diameter"])
+        R1_bar = R1 / nominal_values(ss, :euler_num)
         
-        beta = pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
-        p_fr = sqrt(x_dof[fr_dof])
-        p_to = sqrt(x_dof[to_dof])
+        p_fr = pressure_from_dof(x_dof[fr_dof])
+        p_to = pressure_from_dof(x_dof[to_dof])
         
-        var = abs(p_fr^2/2  - p_to^2/2  - pipe["length"] * beta * R1 * f * abs(f) )
-        residual = max(residual, var)
+        var = abs(p_fr^2/2  - p_to^2/2  -  pipe["length"] * beta * (R1_bar) * f * abs(f) )
+        push!(err, var)
     end
-    return residual
+    err_max  = maximum(err)
+    err_rms = sqrt(sum(err.^2)/ length(err))
+    return err_max, err_rms
 end
 
-function pipe_equations_no_gravity_with_inertia(ss::SteadySimulator, x_dof::AbstractArray)::Real
-    residual = 0
+function pipe_equations_no_gravity_with_inertia(ss::SteadySimulator, x_dof::AbstractArray)::Tuple{Real, Real}
+    err = Vector{Float64}()
     @inbounds for (_, pipe) in ref(ss, :pipe)
         eqn_no = pipe["dof"]
         f = x_dof[eqn_no]
@@ -104,19 +38,26 @@ function pipe_equations_no_gravity_with_inertia(ss::SteadySimulator, x_dof::Abst
         to_node = pipe["to_node"]
         fr_dof = ref(ss, :node, fr_node, "dof")
         to_dof = ref(ss, :node, to_node, "dof")
-        R1 = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
-        beta = pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
-        p_fr = sqrt(x_dof[fr_dof])
-        p_to = sqrt(x_dof[to_dof])
 
-        var =  abs(p_fr^2/2  - p_to^2/2   - R1*(f^2)*(1/2) *log( p_fr^2 / p_to^2 )- pipe["length"] * beta * R1 * f * abs(f))
-        residual = max(residual, var)
+        
+        R1 = nominal_values(ss, :mach_num)^2 / (nominal_values(ss, :euler_num) * pipe["area"]^2)  
+ 
+        beta = pipe["friction_factor"]  / (2 * pipe["diameter"])
+        R1_bar = R1 / nominal_values(ss, :euler_num)
+
+        p_fr = pressure_from_dof(x_dof[fr_dof])
+        p_to = pressure_from_dof(x_dof[to_dof])
+
+        var =  abs(p_fr^2/2  - p_to^2/2   - (R1_bar) * (f^2)  * log( abs(p_fr / p_to) )- pipe["length"] * beta * (R1_bar) * f * abs(f))
+        push!(err, var)
     end
-    return residual
+    err_max  = maximum(err)
+    err_rms = sqrt(sum(err.^2)/ length(err))
+    return err_max, err_rms
 end
 
-function pipe_equations_with_gravity_no_inertia(ss::SteadySimulator, x_dof::AbstractArray)::Real
-    residual = 0
+function pipe_equations_with_gravity_no_inertia(ss::SteadySimulator, x_dof::AbstractArray)::Tuple{Real, Real}
+    err = Vector{Float64}()
     @inbounds for (_, pipe) in ref(ss, :pipe)
         eqn_no = pipe["dof"]
         f = x_dof[eqn_no]
@@ -124,23 +65,35 @@ function pipe_equations_with_gravity_no_inertia(ss::SteadySimulator, x_dof::Abst
         to_node = pipe["to_node"]
         fr_dof = ref(ss, :node, fr_node, "dof")
         to_dof = ref(ss, :node, to_node, "dof")
-        R1 = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
+
+        R1 = nominal_values(ss, :mach_num)^2 / (nominal_values(ss, :euler_num) * pipe["area"]^2)  
+        R2 = nominal_values(ss, :mach_num)^2 / ( nominal_values(ss, :euler_num) * nominal_values(ss, :froude_num)^2 )
+        beta = pipe["friction_factor"]  / (2 * pipe["diameter"])
+
+        R1_bar = R1 / nominal_values(ss, :euler_num)
+        R2_bar = R2 * nominal_values(ss, :euler_num)
         # 8 degree inclination = sin(theta) approx 0.14
         # 2 degree = sin(theta) approx 0.034
         sin_incline = 0.065
-        R2 = sin_incline *  R1 / nominal_values(ss, :froude_num)^2
-        beta = pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
-        p_fr = sqrt(x_dof[fr_dof])
-        p_to = sqrt(x_dof[to_dof])
+        p_fr = pressure_from_dof(x_dof[fr_dof])
+        p_to = pressure_from_dof(x_dof[to_dof])
+        gamma = 2 * sin_incline * R2_bar * pipe["length"]
+        if gamma < 1e-9
+            gravity_factor = 1
+        else
+            gravity_factor = (exp(gamma) - 1) /(gamma)
+        end
 
-        var =  abs( exp(2 * R2 * pipe["length"]) * p_fr^2/2  - p_to^2/2  + pipe["length"] * beta * R1 * f * abs(f) * (exp(2 * R2 * pipe["length"]) - 1) /(2 * R2 * pipe["length"]) )
-        residual = max(residual, var)
+        var =  abs( exp(gamma) * p_fr^2/2  - p_to^2/2  - pipe["length"] * beta * R1_bar * f * abs(f) * gravity_factor )
+        push!(err, var)
     end
-    return residual
+    err_max  = maximum(err)
+    err_rms = sqrt(sum(err.^2)/ length(err))
+    return err_max, err_rms
 end
 
-function pipe_equations_with_gravity_with_inertia(ss::SteadySimulator, x_dof::AbstractArray)::Real
-    residual = 0
+function pipe_equations_with_gravity_with_inertia(ss::SteadySimulator, x_dof::AbstractArray)::Tuple{Real, Real}
+    err = Vector{Float64}()
     @inbounds for (_, pipe) in ref(ss, :pipe)
         eqn_no = pipe["dof"]
         f = x_dof[eqn_no]
@@ -148,22 +101,28 @@ function pipe_equations_with_gravity_with_inertia(ss::SteadySimulator, x_dof::Ab
         to_node = pipe["to_node"]
         fr_dof = ref(ss, :node, fr_node, "dof")
         to_dof = ref(ss, :node, to_node, "dof")
-        R1 = nominal_values(ss, :mach_num)^2 / nominal_values(ss, :euler_num) 
+
+        R1 = nominal_values(ss, :mach_num)^2 / (nominal_values(ss, :euler_num) * pipe["area"]^2)  
+        R2 = nominal_values(ss, :mach_num)^2 / ( nominal_values(ss, :euler_num) * nominal_values(ss, :froude_num)^2 )
+        beta = pipe["friction_factor"]  / (2 * pipe["diameter"])
+
+        R1_bar = R1 / nominal_values(ss, :euler_num)
+        R2_bar = R2 * nominal_values(ss, :euler_num)
         # 8 degree inclination = sin(theta) approx 0.14
         # 2 degree = sin(theta) approx 0.034
         sin_incline = 0.065
-        R2 = sin_incline *  R1 / nominal_values(ss, :froude_num)^2
-        beta = pipe["friction_factor"]  / (2 * pipe["diameter"] * pipe["area"]^2)
-        p_fr = sqrt(x_dof[fr_dof])
-        p_to = sqrt(x_dof[to_dof])
+        p_fr = pressure_from_dof(x_dof[fr_dof])
+        p_to = pressure_from_dof(x_dof[to_dof])
         
-        var1 = beta * nominal_values(ss, :froude_num)^2 * f * abs(f)
-        var2 = R1 * (f^2)
-        var = abs((var1 - var2) * log( (p_to^2 - var1) / (p_fr^2 - var1) ) 
-        + 2 * var2 * log( (p_to) / (p_fr) ) - 2 * pipe["length"] * beta * R1 * f * abs(f))
-        residual = max(residual, var)
+        var1 = ((beta * R1_bar) / (sin_incline * R2_bar)) * f * abs(f)
+        var2 = (R1_bar) * (f^2)
+        var = abs((var2 - var1) * log( abs(p_fr^2 - var1) / abs(p_to^2 - var1) ) 
+        - (2) * var2 * log( abs(p_fr) / abs(p_to) ) - 2 * pipe["length"] * beta * R1_bar * f * abs(f))
+        push!(err, var)
     end
-    return residual
+    err_max  = maximum(err)
+    err_rms = sqrt(sum(err.^2)/ length(err))
+    return err_max, err_rms
 end
 
 # """residual computation for compressor"""
