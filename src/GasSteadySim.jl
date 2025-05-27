@@ -5,7 +5,6 @@ using NLsolve
 using SparseArrays
 using LineSearches
 using NLSolversBase
-using DifferentialEquations
 
 include("io/json.jl")
 include("io/data_utils.jl")

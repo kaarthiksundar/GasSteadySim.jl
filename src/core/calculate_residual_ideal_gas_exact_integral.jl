@@ -1,7 +1,5 @@
 
-function pressure_from_dof(dof_val)
-    return sqrt(dof_val)
-end
+
 
 """residual computation for pipes"""
 function pipe_equations_no_gravity_no_inertia(ss::SteadySimulator, x_dof::AbstractArray)::Tuple{Real, Real}
@@ -18,8 +16,8 @@ function pipe_equations_no_gravity_no_inertia(ss::SteadySimulator, x_dof::Abstra
         beta = pipe["friction_factor"]  / (2 * pipe["diameter"])
         R1_bar = R1 / nominal_values(ss, :euler_num)
         
-        p_fr = pressure_from_dof(x_dof[fr_dof])
-        p_to = pressure_from_dof(x_dof[to_dof])
+        p_fr = ode_dof_to_pressure(x_dof[fr_dof])
+        p_to = ode_dof_to_pressure(x_dof[to_dof])
         
         var = abs(p_fr^2/2  - p_to^2/2  -  pipe["length"] * beta * (R1_bar) * f * abs(f) )
         push!(err, var)
@@ -45,8 +43,8 @@ function pipe_equations_no_gravity_with_inertia(ss::SteadySimulator, x_dof::Abst
         beta = pipe["friction_factor"]  / (2 * pipe["diameter"])
         R1_bar = R1 / nominal_values(ss, :euler_num)
 
-        p_fr = pressure_from_dof(x_dof[fr_dof])
-        p_to = pressure_from_dof(x_dof[to_dof])
+        p_fr = ode_dof_to_pressure(x_dof[fr_dof])
+        p_to = ode_dof_to_pressure(x_dof[to_dof])
 
         var =  abs(p_fr^2/2  - p_to^2/2   - (R1_bar) * (f^2)  * log( abs(p_fr / p_to) )- pipe["length"] * beta * (R1_bar) * f * abs(f))
         push!(err, var)
@@ -75,8 +73,8 @@ function pipe_equations_with_gravity_no_inertia(ss::SteadySimulator, x_dof::Abst
         # 8 degree inclination = sin(theta) approx 0.14
         # 2 degree = sin(theta) approx 0.034
         sin_incline = 0.065
-        p_fr = pressure_from_dof(x_dof[fr_dof])
-        p_to = pressure_from_dof(x_dof[to_dof])
+        p_fr = ode_dof_to_pressure(x_dof[fr_dof])
+        p_to = ode_dof_to_pressure(x_dof[to_dof])
         gamma = 2 * sin_incline * R2_bar * pipe["length"]
         if gamma < 1e-9
             gravity_factor = 1
@@ -111,8 +109,8 @@ function pipe_equations_with_gravity_with_inertia(ss::SteadySimulator, x_dof::Ab
         # 8 degree inclination = sin(theta) approx 0.14
         # 2 degree = sin(theta) approx 0.034
         sin_incline = 0.065
-        p_fr = pressure_from_dof(x_dof[fr_dof])
-        p_to = pressure_from_dof(x_dof[to_dof])
+        p_fr = ode_dof_to_pressure(x_dof[fr_dof])
+        p_to = ode_dof_to_pressure(x_dof[to_dof])
         
         var1 = ((beta * R1_bar) / (sin_incline * R2_bar)) * f * abs(f)
         var2 = (R1_bar) * (f^2)
