@@ -55,7 +55,7 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::Name
                 ref(ss, sym, local_id)["withdrawal"] = calculate_slack_withdrawal(ss, local_id, x_dof)
             end 
 
-            p_val = x_dof[i] 
+            p_val = ode_dof_to_pressure(x_dof[i]) 
 
             if (p_val < 0)
                 push!(nodal_pressures_not_in_domain, local_id)
@@ -79,10 +79,7 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::Name
             end
         end
 
-        if sym == :control_valve 
-            ref(ss, sym, local_id)["flow"] = x_dof[i]
-        end 
-
+        (sym == :control_valve) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
         (sym == :valve) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
         (sym == :resistor) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
         (sym == :loss_resistor) && (ref(ss, sym, local_id)["flow"] = x_dof[i])
