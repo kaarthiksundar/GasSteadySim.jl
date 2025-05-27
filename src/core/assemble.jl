@@ -88,8 +88,7 @@ function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, re
     end
 end
 
-# p'(x) = G(p, f) => pp'(x)  = pG(p,f) => p_fr^2/2 - p_to^2/2  + (L/2) * ( p_fr*G(p_fr, f) + p_to*G(p_to, f)) = 0
-# p'(x) = G(p, f) => 2pp'(x)  = 2pG(p,f)  => with y = p^2 that  y'(x) = 2 * sqrt(y)*G(sqrt(y), f)
+# p'(x) = G(p, f) 
 function G(ss::SteadySimulator, p::Real, c::Vector)::Real
     f, c0, c1, c2 = c
     rho = get_density(ss, p)
@@ -97,7 +96,6 @@ function G(ss::SteadySimulator, p::Real, c::Vector)::Real
     t1 = rho^3*c2 - rho * c0 * f * abs(f)
     t2 = rho^2 - c1 * (f^2) * rho_prime
     return t1/t2
-    # return -beta * f * abs(f) / rho
 end
 
 function dGdp(ss::SteadySimulator, p::Real, c::Vector)::Real
@@ -110,7 +108,6 @@ function dGdp(ss::SteadySimulator, p::Real, c::Vector)::Real
     t1_prime = (3 * (rho^2) * c2 - c0 * f * abs(f)) * rho_prime
     t2_prime = 2 * rho * rho_prime - c1 * (f^2) * rho_double_prime
     return (t1_prime * t2 - t1 * t2_prime) / (t2^2)
-    # return     beta * f * abs(f) * rho_prime / (rho^2)
 end
 
 function dGdf(ss::SteadySimulator, p::Real, c::Vector)::Real
@@ -122,8 +119,6 @@ function dGdf(ss::SteadySimulator, p::Real, c::Vector)::Real
     t1_prime = - 2 * rho * c0 * abs(f)
     t2_prime = - 2  * c1 * f * rho_prime
     return (t1_prime * t2 - t1 * t2_prime) / (t2^2)  
-    # return -2 * beta * abs(f) / rho
-
 end
 
 # p'(x) = G(p, f) => with p = psi(y) that  y'(x) = H(y, f) =  G(psi(y), f)/ psi'(y)
@@ -147,9 +142,7 @@ end
 
 """residual computation for pipes"""
 function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
-    # ode_func(u, c, x)  = 2 * sqrt(u) * G(ss, sqrt(u), c[1], c[2], c[3], c[4])
     ode_func(y, c, x)  = H(ss, y, c)
-
     @inbounds for (i, pipe) in ref(ss, :pipe)
         eqn_no = pipe["dof"]
         f = x_dof[eqn_no]
@@ -169,29 +162,15 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
         c = [f, c0, c1, c2]
         
         prob = ODEProblem(ode_func, x_dof[fr_dof], (0, pipe["length"]), c)
-        sol = solve(prob, TRBDF2(), save_everystep = false);
-        #ImplicitEuler()
-        # Trapezoid()
-        # code jacobian terms as ode also and check with both Pi and p^2 forms
-
-        # if sol.retcode in [:MaxIters, :Unstable, :ConvergenceFailure, :Failure]
-        #     println(sol.retcode)
-        # end
+        # Use ImplicitEuler() or Trapezoid() or TRBDF2()
+        sol = solve(prob, Trapezoid(), save_everystep = false); 
         
         x_dof_to_ode = sol[2]
 
-        residual_dof[eqn_no] =  x_dof_to_ode - x_dof[to_dof]
-        # p_fr = sqrt(x_dof[fr_dof])
-        # p_to = sqrt(x_dof[to_dof])
-        #  var = x_dof[fr_dof]  - x_dof[to_dof]  + pipe["length"]* 0.5 * ( 2 * p_fr * G(ss, p_fr, f, c0, c1, c2) + 2 * p_to * G(ss, p_to, f, c0, c1, c2) )
-        # if i == 32
-            # println("pipe $i ", var, " ", residual_dof[eqn_no])
-        # end
+        # residual_dof[eqn_no] =  cbrt(x_dof_to_ode^2) - cbrt(x_dof[to_dof]^2) # mimic p^2 term
+        residual_dof[eqn_no] =  x_dof_to_ode - x_dof[to_dof]                   # mimic p^3 term
 
-        # p^2 as dof form
-        # p_fr = sqrt(x_dof[fr_dof])
-        # p_to = sqrt(x_dof[to_dof])
-        # residual_dof[eqn_no] =  x_dof[fr_dof]  - x_dof[to_dof]  + pipe["length"]* 0.5 * ( 2 * p_fr * G(ss, p_fr, f, c0, c1, c2) + 2 * p_to * G(ss, p_to, f, c0, c1, c2) )
+    
     end
 end
 
@@ -312,37 +291,18 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
         prob = ODEProblem(ode_syst!, u0, (0, pipe["length"]), c)
         sol = solve(prob, Trapezoid(), save_everystep = false);
 
-        # p_to_p0_f, dpdp0, dpdf = sol[2]
         y_to_ode, lambda_y0, lambda_f = sol[2]
-        # @show key, sol[2]
 
-        J[eqn_no, eqn_fr] = lambda_y0 # ode_dof_to_pressure_derivative(y_to_ode) * lambda_y0
-        J[eqn_no, eqn_no] =  lambda_f # ode_dof_to_pressure_derivative(y_to_ode) * lambda_f
-        J[eqn_no, eqn_to] =  -1       # ode_dof_to_pressure_derivative(y_to_ode) * (-1)
+        ## y^(2/3)
+        # J[eqn_no, eqn_fr] = (2/3) * (1 / cbrt(y_to_ode)) * lambda_y0 
+        # J[eqn_no, eqn_no] = (2/3) * (1 / cbrt(y_to_ode)) * lambda_f 
+        # J[eqn_no, eqn_to] = (2/3) * (1 / cbrt(x_dof[eqn_to])) * (-1) 
 
-        # J[eqn_no, eqn_fr] = 2 * p_to_p0_f * dpdp0
-        # J[eqn_no, eqn_no] = 2 * p_to_p0_f * dpdf
-        # J[eqn_no, eqn_to] = -2 * p_to
+        ## y
+        J[eqn_no, eqn_fr] = lambda_y0
+        J[eqn_no, eqn_no] = lambda_f
+        J[eqn_no, eqn_to] = -1
 
-        # J[eqn_no, eqn_fr] = x_dof[eqn_fr] + pipe["length"] * 0.5 * (G(ss, x_dof[eqn_fr], f, beta, c1, c2) + x_dof[eqn_fr] * dGdp(ss, x_dof[eqn_fr], f, beta, c1, c2) )
-        # J[eqn_no, eqn_to] = -x_dof[eqn_to] + pipe["length"] * 0.5 * (G(ss, x_dof[eqn_to], f, beta, c1, c2) + x_dof[eqn_to] * dGdp(ss, x_dof[eqn_to], f, beta, c1, c2) )
-        # J[eqn_no, eqn_no] = pipe["length"] * 0.5 * (x_dof[eqn_to] * dGdf(ss, x_dof[eqn_to], f, beta, c1, c2) + x_dof[eqn_to] * dGdf(ss, x_dof[eqn_to], f, beta, c1, c2))
-
-        # p^2 as dof
-        # J[eqn_no, eqn_fr] = 1 + pipe["length"] * 0.5 * (2 * G(ss, p_fr, f, c0, c1, c2) + 2 * p_fr * dGdp(ss, p_fr, f, c0, c1, c2) ) / (2 * p_fr)
-        # J[eqn_no, eqn_to] = -1 + pipe["length"] * 0.5 * (2 * G(ss, p_to, f, c0, c1, c2) + 2 * p_to * dGdp(ss, p_to, f, c0, c1, c2) ) / (2 * p_to)
-        # J[eqn_no, eqn_no] = pipe["length"] * 0.5 * ( 2 * p_to * dGdf(ss, p_to, f, c0, c1, c2) + 2 * p_fr * dGdf(ss, p_fr, f, c0, c1, c2))
-
-
-        # pi - pj form with p as dof
-        # J[eqn_no, eqn_fr] = 1 + pipe["length"] * 0.5 * (dGdp(ss, x_dof[eqn_fr], f, beta, c1, c2) )
-        # J[eqn_no, eqn_to] = -1 + pipe["length"] * 0.5 * (dGdp(ss, x_dof[eqn_to], f, beta, c1, c2) )
-        # J[eqn_no, eqn_no] = pipe["length"] * 0.5 * (dGdf(ss, x_dof[eqn_to], f, beta, c1, c2) + dGdf(ss, x_dof[eqn_to], f, beta, c1, c2))
-
-        # exact with p^2 as dof
-        # J[eqn_no, eqn_fr] =  1 #x_dof[eqn_fr]
-        # J[eqn_no, eqn_to] = -1  #-x_dof[eqn_to]
-        # J[eqn_no, eqn_no] = - 4  * (beta /ss.nominal_values[:euler_num]) *  pipe["length"] * abs(f)
 
     end
 end
