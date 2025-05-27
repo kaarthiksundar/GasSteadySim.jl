@@ -48,26 +48,6 @@ function ode_dof_to_pressure_second_derivative(dof_val::Real)::Real
     return  -2.0 / (9 * cbrt(dof_val^5)) # psi''(y)
 end
 
-# p = sqrt(pi)
-function nodal_dof_to_pressure(x_dof::Real)::Real
-    return sqrt(x_dof)
-end
-
-# pi = p^2
-function pressure_to_nodal_dof(p::Real)::Real
-    return p^2
-end
-
-function nodal_dof_to_ode_dof(x_dof::Real)::Real
-    return sqrt(x_dof)
-end
-
-# pi = p^2
-function ode_dof_to_nodal_dof(y::Real)::Real
-    return cbrt(y)^2
-end
-
-
 """residual computation for junctions"""
 function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
     @inbounds for (id, junction) in ref(ss, :node)
