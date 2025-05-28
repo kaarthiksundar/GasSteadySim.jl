@@ -101,7 +101,7 @@ function dGdf(ss::SteadySimulator, p::Real, c::Vector)::Real
     return (t1_prime * t2 - t1 * t2_prime) / (t2^2)  
 end
 
-# p'(x) = G(p, f) => with p = psi(y) that  y'(x) = H(y, f) =  G(psi(y), f)/ psi'(y)
+# p'(x) = G(p, f) with p = psi(y) =>  y'(x) = H(y, f) =  G(psi(y), f)/ psi'(y)
 # 2 pt collocation => y_fr - y_to + L/2 * ( H(y_fr, f) + H(y_to, f) ) = 0
 
 function H(ss::SteadySimulator, y::Real, c::Vector)::Real
@@ -118,6 +118,14 @@ end
 function dHdf(ss::SteadySimulator, y::Real, c::Vector)::Real
     p = ode_dof_to_pressure(y)
     return dGdf(ss, p, c)  / ode_dof_to_pressure_derivative(y)
+end
+
+function pipe_residual(x1::Real, x2::Real)::Real
+    return x1 - x2
+end
+
+function pipe_residual_derivatives(x1::Real, x2::Real)::Tuple{Real, Real}
+    return 1.0, -1.0
 end
 
 """residual computation for pipes"""
@@ -148,7 +156,7 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
         x_dof_to_ode = sol[2]
 
         # residual_dof[eqn_no] =  cbrt(x_dof_to_ode^2) - cbrt(x_dof[to_dof]^2) # mimic p^2 term
-        residual_dof[eqn_no] =  x_dof_to_ode - x_dof[to_dof]                   # mimic p^3 term
+        residual_dof[eqn_no] =  pipe_residual(x_dof_to_ode, x_dof[to_dof])                   # mimic p^3 term
 
     
     end
@@ -279,9 +287,10 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
         # J[eqn_no, eqn_to] = (2/3) * (1 / cbrt(x_dof[eqn_to])) * (-1) 
 
         ## y
-        J[eqn_no, eqn_fr] = lambda_y0
-        J[eqn_no, eqn_no] = lambda_f
-        J[eqn_no, eqn_to] = -1
+        R_x1, R_x2 = pipe_residual_derivatives(y_to_ode, x_dof[eqn_to])
+        J[eqn_no, eqn_fr] = R_x1 * lambda_y0
+        J[eqn_no, eqn_no] = R_x1 * lambda_f
+        J[eqn_no, eqn_to] = R_x2
 
 
     end
