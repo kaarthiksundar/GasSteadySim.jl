@@ -77,10 +77,9 @@ TOL = 1.0e-7
 end
 
 @enum SOLVER_STATUS begin 
-    unique_physical_solution = 0 
+    physical_solution = 0 
     nl_solve_failure = 1 
-    unique_unphysical_solution = 2 
-    unphysical_solution = 3
+    unphysical_solution = 2 
 end
 
 struct SolverReturn 
@@ -90,5 +89,5 @@ struct SolverReturn
     time::Float64 
     solution::Vector{Float64}
     negative_flow_in_compressors::Vector{Int64}
-    pressure_domain_not_satisfied_in_nodes::Vector{Int64}
+    nodes_with_negative_pressure::Vector{Int64}
 end 

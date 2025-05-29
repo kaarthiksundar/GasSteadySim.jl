@@ -36,33 +36,25 @@ function run_simulator!(
     sol_return = update_solution_fields_in_ref!(ss, soln.zero)
     populate_solution!(ss)
 
-    unphysical_solution = ~isempty(sol_return[:compressors_with_neg_flow])
+    unphysical_solution_flag = ~isempty(sol_return[:compressors_with_neg_flow]) || ~isempty(sol_return[:nodes_with_negative_pressures])
 
-    if unphysical_solution
-        is_unique = isempty(sol_return[:nodes_with_pressure_not_in_domain])
-        if is_unique 
-            return SolverReturn(unique_unphysical_solution, 
+    if unphysical_solution_flag
+
+        return SolverReturn(unphysical_solution, 
                 soln.iterations, 
                 soln.residual_norm, 
                 time, soln.zero, 
                 sol_return[:compressors_with_neg_flow], 
-                sol_return[:nodes_with_pressure_not_in_domain])
-        else 
-            return SolverReturn(unphysical_solution, 
-                soln.iterations, 
-                soln.residual_norm, 
-                time, soln.zero, 
-                sol_return[:compressors_with_neg_flow], 
-                sol_return[:nodes_with_pressure_not_in_domain])
-        end 
+                sol_return[:nodes_with_negative_pressures])
+        
     end 
 
-    return SolverReturn(unique_physical_solution, 
+    return SolverReturn(physical_solution, 
         soln.iterations, 
         soln.residual_norm, 
         time, soln.zero, 
         sol_return[:compressors_with_neg_flow], 
-        sol_return[:nodes_with_pressure_not_in_domain])
+        sol_return[:nodes_with_negative_pressures])
 end
 
 # overloaded run_simulator
@@ -88,7 +80,8 @@ end
 
 function _create_initial_guess_dof!(ss::SteadySimulator)::Array
     ndofs = length(ref(ss, :dof))
-    x_guess = 0.5 * ones(Float64, ndofs) 
+    Random.seed!(2025)
+    x_guess = rand(ndofs) 
     dofs_updated = 0
 
     components = [:node, :pipe, :compressor, 
