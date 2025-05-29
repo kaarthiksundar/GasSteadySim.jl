@@ -1,6 +1,7 @@
 module GasSteadySim
 
 import JSON
+using Random
 using NLsolve
 using SparseArrays
 using LineSearches
