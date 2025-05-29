@@ -45,7 +45,7 @@ end
 function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::NamedTuple
     flow_direction = true
     negative_flow_in_compressors = Int[]
-    nodal_pressures_not_in_domain = Int[]
+    negative_nodal_pressures = Int[]
 
     for i in 1:length(x_dof)
         sym, local_id = ref(ss, :dof, i)
@@ -58,9 +58,9 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::Name
             p_val = ode_dof_to_pressure(x_dof[i]) 
 
             if (p_val < 0)
-                push!(nodal_pressures_not_in_domain, local_id)
-                ref(ss, sym, local_id)["pressure"] = NaN 
-                ref(ss, sym, local_id)["density"] = NaN
+                push!(negative_nodal_pressures, local_id)
+                ref(ss, sym, local_id)["pressure"] = p_val 
+                ref(ss, sym, local_id)["density"] = get_density(ss, p_val)
             else  
                 ref(ss, sym, local_id)["pressure"] = p_val
                 ref(ss, sym, local_id)["density"] = get_density(ss, p_val)
@@ -92,7 +92,7 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::Name
     return (
             pipe_flow_dir = flow_direction, 
             compressors_with_neg_flow = negative_flow_in_compressors, 
-            nodes_with_pressure_not_in_domain = nodal_pressures_not_in_domain
+            nodes_with_negative_pressures = negative_nodal_pressures
         )
 end
 
