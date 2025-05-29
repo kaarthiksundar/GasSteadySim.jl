@@ -82,6 +82,8 @@ function _create_initial_guess_dof!(ss::SteadySimulator)::Array
     ndofs = length(ref(ss, :dof))
     Random.seed!(2025)
     x_guess = rand(ndofs) 
+    # x_guess = 0.5 * ones(Float64, ndofs) 
+
     dofs_updated = 0
 
     components = [:node, :pipe, :compressor, 
