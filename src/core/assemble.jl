@@ -21,41 +21,41 @@ function assemble_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArr
     _eval_short_pipe_equations_mat!(ss, x_dof, J)
     _eval_pass_through_equations_mat!(ss, x_dof, J)
 end
-# #---------------------------
-# # p = psi(y) = cbrt(y)
-# #--------------------------
-# function ode_dof_to_pressure(dof_val::Real)::Real
-#     return  cbrt(dof_val)  #psi(y)
-# end
-# function pressure_to_ode_dof(p::Real)::Real
-#     return  p^3    # psi_inv(p)
-# end
-
-# function  ode_dof_to_pressure_derivative(dof_val::Real)::Real
-#     return  1.0/ (3 * cbrt(dof_val^2))  # psi'(y)
-# end
-
-# function ode_dof_to_pressure_second_derivative(dof_val::Real)::Real
-#     return  -2.0 / (9 * cbrt(dof_val^5)) # psi''(y)
-# end
-
 #---------------------------
-# p = psi(y) = sqrt(y)
+# p = psi(y) = cbrt(y)
 #--------------------------
 function ode_dof_to_pressure(dof_val::Real)::Real
-    return  sqrt(dof_val) # psi(y)
+    return  cbrt(dof_val)  #psi(y)
 end
 function pressure_to_ode_dof(p::Real)::Real
-    return  p^2   # psi_inv(p)
+    return  p^3    # psi_inv(p)
 end
 
 function  ode_dof_to_pressure_derivative(dof_val::Real)::Real
-    return  1.0/ (2 * sqrt(dof_val)) # psi'(y)
+    return  1.0/ (3 * cbrt(dof_val^2))  # psi'(y)
 end
 
 function ode_dof_to_pressure_second_derivative(dof_val::Real)::Real
-    return  -1.0 / (4 * sqrt(dof_val^3)) # psi''(y)
+    return  -2.0 / (9 * cbrt(dof_val^5)) # psi''(y)
 end
+
+# #---------------------------
+# # p = psi(y) = sqrt(y)
+# #--------------------------
+# function ode_dof_to_pressure(dof_val::Real)::Real
+#     return  sqrt(dof_val) # psi(y)
+# end
+# function pressure_to_ode_dof(p::Real)::Real
+#     return  p^2   # psi_inv(p)
+# end
+
+# function  ode_dof_to_pressure_derivative(dof_val::Real)::Real
+#     return  1.0/ (2 * sqrt(dof_val)) # psi'(y)
+# end
+
+# function ode_dof_to_pressure_second_derivative(dof_val::Real)::Real
+#     return  -1.0 / (4 * sqrt(dof_val^3)) # psi''(y)
+# end
 
 """residual computation for junctions"""
 function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
