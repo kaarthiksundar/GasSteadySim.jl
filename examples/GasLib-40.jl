@@ -3,9 +3,9 @@ using JSON
 
 file = "./data/GasLib-40/"
 eos_var = :ideal
-inertial_bool = true
-gravity_bool = true
-ss = initialize_simulator(file, eos=eos_var, initial_guess_filename="exact_sol_collocation.json")
+inertial_bool = false
+gravity_bool = false
+ss = initialize_simulator(file, eos=eos_var, initial_guess_filename="r.json")
 solver_return = run_simulator!(ss, gravity_bool= gravity_bool, inertial_bool=inertial_bool, iteration_limit=100, show_trace_flag=true)
 
 println(solver_return.status)
@@ -25,6 +25,10 @@ if solver_return.status != nl_solve_failure
         end
 
         # filename = "./data/GasLib-40/exact_sol_ideal"  * ".json"
+        # open(filename, "w") do f 
+        #         JSON.print(f, ss.sol, 2)
+        # end
+        # filename = "./data/GasLib-40/r4"  * ".json"
         # open(filename, "w") do f 
         #         JSON.print(f, ss.sol, 2)
         # end
