@@ -84,7 +84,7 @@ end
 
 struct SolverReturn 
     status::SOLVER_STATUS
-    iterations::Int 
+    stats::SciMLBase.NLStats
     residual_norm::Float64 
     time::Float64 
     solution::Vector{Float64}
