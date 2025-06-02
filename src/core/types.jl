@@ -91,3 +91,11 @@ struct SolverReturn
     negative_flow_in_compressors::Vector{Int64}
     nodes_with_negative_pressure::Vector{Int64}
 end 
+
+solver_method = Dict{Symbol, Any}(
+    :newton => NewtonRaphson(), 
+    :trust_region => TrustRegion(), 
+    :lm => LevenbergMarquardt(), 
+    :robust_newton => RobustMultiNewton(), 
+    :fast => FastShortcutNonlinearPolyalg()
+)

@@ -15,19 +15,17 @@ function run_simulator!(
     ss::SteadySimulator, 
     df::NonlinearFunction; 
     x_guess::Vector=Vector{Float64}(), 
-    method::Symbol=:newton,
+    method::Symbol=:trust_region,
     iteration_limit::Int64=2000, 
     show_trace_flag::Bool=false,
     kwargs...)::SolverReturn
 
     (isempty(x_guess)) && (x_guess = _create_initial_guess_dof!(ss))
     prob = NonlinearProblem(df, x_guess)
-    fcn_method = method == :newton ? NewtonRaphson() : TrustRegion()
+    fcn_method = get(solver_method, method, TrustRegion())
     time = @elapsed soln = solve(prob, fcn_method, 
     maxiters = iteration_limit, show_trace = Val(show_trace_flag))
-    res = maximum(abs.(soln.resid))
-    # time = @elapsed soln = nlsolve(df, x_guess; method = method, iterations = iteration_limit, show_trace=show_trace_flag, kwargs...)
-
+    res = maximum(abs.(soln.resid), kwargs...)
     convergence_state = soln.retcode
 
     if convergence_state == false
@@ -66,7 +64,7 @@ end
 function run_simulator!(ss::SteadySimulator; 
     gravity_bool::Bool=false, 
     inertial_bool::Bool=false,
-    method::Symbol=:newton,
+    method::Symbol=:trust_region,
     iteration_limit::Int64=2000, 
     show_trace_flag::Bool=false,
     kwargs...)::SolverReturn
