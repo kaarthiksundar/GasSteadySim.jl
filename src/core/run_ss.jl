@@ -22,7 +22,8 @@ function run_simulator!(
 
     (isempty(x_guess)) && (x_guess = _create_initial_guess_dof!(ss))
     prob = NonlinearProblem(df, x_guess)
-    time = @elapsed soln = solve(prob, TrustRegion(), 
+    fcn_method = method == :newton ? NewtonRaphson() : TrustRegion()
+    time = @elapsed soln = solve(prob, fcn_method, 
     maxiters = iteration_limit, show_trace = Val(show_trace_flag))
     res = maximum(abs.(soln.resid))
     # time = @elapsed soln = nlsolve(df, x_guess; method = method, iterations = iteration_limit, show_trace=show_trace_flag, kwargs...)
@@ -85,8 +86,8 @@ end
 function _create_initial_guess_dof!(ss::SteadySimulator)::Array
     ndofs = length(ref(ss, :dof))
     Random.seed!(2025)
-    # x_guess = rand(ndofs)
-    x_guess = 0.5 * ones(Float64, ndofs) 
+    x_guess = rand(ndofs)
+    # x_guess = 0.5 * ones(Float64, ndofs) 
     dofs_updated = 0
 
     components = [:node, :pipe, :compressor, 
