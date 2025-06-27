@@ -2,9 +2,9 @@
 
 
 """function assembles the residuals"""
-function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
+function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray, case::Symbol)
     _eval_junction_equations!(ss, x_dof, residual_dof)
-    _eval_pipe_equations!(ss, x_dof, residual_dof)
+    _eval_pipe_equations!(ss, x_dof, residual_dof, case)
     _eval_compressor_equations!(ss, x_dof, residual_dof)
     # _eval_control_valve_equations!(ss, x_dof, residual_dof)
     # _eval_short_pipe_equations!(ss, x_dof, residual_dof)
@@ -12,10 +12,10 @@ function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_
 end
 
 """function assembles the Jacobians"""
-function assemble_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArray)
+function assemble_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArray, case::Symbol)
     fill!(J, 0)
     _eval_junction_equations_mat!(ss, x_dof, J)
-    _eval_pipe_equations_mat!(ss, x_dof, J)
+    _eval_pipe_equations_mat!(ss, x_dof, J, case)
     _eval_compressor_equations_mat!(ss, x_dof, J)
     # _eval_control_valve_equations_mat!(ss, x_dof, J)
     # _eval_short_pipe_equations_mat!(ss, x_dof, J)
@@ -33,18 +33,18 @@ end
         
 
 # p = psi(y)
-function ode_dof_to_pressure(dof_val::Real)::Real
+function dof_to_pressure(dof_val::Real)::Real
     return  cbrt(dof_val) #psi(y)
 end
-function pressure_to_ode_dof(p::Real)::Real
+function pressure_to_dof(p::Real)::Real
     return  p^3  #sqrt(p)  # psi_inv(p)
 end
 
-function  ode_dof_to_pressure_derivative(dof_val::Real)::Real
+function  dof_to_pressure_derivative(dof_val::Real)::Real
     return  1.0/ (3 * cbrt(dof_val^2)) # psi'(y)
 end
 
-function ode_dof_to_pressure_second_derivative(dof_val::Real)::Real
+function dof_to_pressure_second_derivative(dof_val::Real)::Real
     return  -2.0 / (9 * cbrt(dof_val^5)) # psi''(y)
 end
 
@@ -55,7 +55,7 @@ function _eval_junction_equations!(ss::SteadySimulator, x_dof::AbstractArray, re
         
         if junction["is_slack"] == 1
             pressure = junction["pressure"]
-            coeff = pressure_to_ode_dof(pressure)
+            coeff = pressure_to_dof(pressure)
             residual_dof[eqn_no] = x_dof[eqn_no] - (coeff)
         else
             r = (-junction["withdrawal"]) # inflow is positive convention
@@ -105,19 +105,19 @@ end
 # 2 pt collocation => y_fr - y_to + L/2 * ( H(y_fr, f) + H(y_to, f) ) = 0
 
 function H(ss::SteadySimulator, y::Real, c::Vector)::Real
-    p = ode_dof_to_pressure(y)
-    return G(ss, p, c)/ode_dof_to_pressure_derivative(y)
+    p = dof_to_pressure(y)
+    return G(ss, p, c)/dof_to_pressure_derivative(y)
 end
 
 function dHdy(ss::SteadySimulator, y::Real, c::Vector)::Real
-    p = ode_dof_to_pressure(y)
-    return dGdp(ss, p, c) -  ( G(ss, p, c) * ode_dof_to_pressure_second_derivative(y) ) / (ode_dof_to_pressure_derivative(y))^2
+    p = dof_to_pressure(y)
+    return dGdp(ss, p, c) -  ( G(ss, p, c) * dof_to_pressure_second_derivative(y) ) / (dof_to_pressure_derivative(y))^2
 end
 
 
 function dHdf(ss::SteadySimulator, y::Real, c::Vector)::Real
-    p = ode_dof_to_pressure(y)
-    return dGdf(ss, p, c)  / ode_dof_to_pressure_derivative(y)
+    p = dof_to_pressure(y)
+    return dGdf(ss, p, c)  / dof_to_pressure_derivative(y)
 end
 
 function pipe_residual(x1::Real, x2::Real)::Real
@@ -129,8 +129,11 @@ function pipe_residual_derivatives(x1::Real, x2::Real)::Tuple{Real, Real}
 end
 
 """residual computation for pipes"""
-function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
-    ode_func(y, c, x)  = H(ss, y, c)
+function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray, case::Symbol)
+
+    if case == :ode
+        ode_func(y, c, x)  = H(ss, y, c)
+    end
     @inbounds for (i, pipe) in ref(ss, :pipe)
         eqn_no = pipe["dof"]
         f = x_dof[eqn_no]
@@ -149,14 +152,17 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
         c2 = R2 * sin_incline * params(ss, :gravity_bool)
         c = [f, c0, c1, c2]
         
-        prob = ODEProblem(ode_func, x_dof[fr_dof], (0, pipe["length"]), c)
-        # Use ImplicitEuler() or Trapezoid() or TRBDF2()
-        sol = solve(prob, Trapezoid(), save_everystep = false); 
-        
-        x_dof_to_ode = sol[2]
+        if case == :ode
+            prob = ODEProblem(ode_func, x_dof[fr_dof], (0, pipe["length"]), c)
+            # Use ImplicitEuler() or Trapezoid() or TRBDF2()
+            sol = solve(prob, Trapezoid(), save_everystep = false); 
+            x_dof_to_ode = sol[2]
+            residual_dof[eqn_no] =  pipe_residual(x_dof_to_ode, x_dof[to_dof])  # mimic p^3 term
+        end
 
-        # residual_dof[eqn_no] =  cbrt(x_dof_to_ode^2) - cbrt(x_dof[to_dof]^2) # mimic p^2 term
-        residual_dof[eqn_no] =  pipe_residual(x_dof_to_ode, x_dof[to_dof])                   # mimic p^3 term
+        if case ==:two_point_collocation
+            residual_dof[eqn_no] =  x_dof[fr_dof]  - x_dof[to_dof]  + pipe["length"]* 0.5 * ( H(ss, x_dof[fr_dof], c) + H(ss, x_dof[to_dof], c) )
+        end
 
     
     end
@@ -170,7 +176,7 @@ function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, 
         alpha = comp["c_ratio"]
         to_node = comp["to_node"]
         fr_node = comp["fr_node"]
-        residual_dof[eqn_no] = pressure_to_ode_dof(alpha) * x_dof[ref(ss, :node, fr_node, "dof")] -  x_dof[ref(ss, :node, to_node, "dof")]
+        residual_dof[eqn_no] = pressure_to_dof(alpha) * x_dof[ref(ss, :node, fr_node, "dof")] -  x_dof[ref(ss, :node, to_node, "dof")]
     end
 end
 
@@ -246,12 +252,15 @@ end
 
 """in place Jacobian computation for pipes"""
 function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
-        J::AbstractArray)
-    function ode_syst!(du, u, c, x)
-        y, lambda_y0, lambda_f = u   
-        du[1] = H(ss, y, c)  #dy
-        du[2] = dHdy(ss, y, c) * lambda_y0 #dlambda_y0
-        du[3] = dHdy(ss, y, c) * lambda_f + dHdf(ss, y, c) # dlambda_f
+        J::AbstractArray, case::Symbol)
+    
+    if case == :ode
+        function ode_syst!(du, u, c, x)
+            y, lambda_y0, lambda_f = u   
+            du[1] = H(ss, y, c)  #dy
+            du[2] = dHdy(ss, y, c) * lambda_y0 #dlambda_y0
+            du[3] = dHdy(ss, y, c) * lambda_f + dHdf(ss, y, c) # dlambda_f
+        end
     end
     @inbounds for (key, pipe) in ref(ss, :pipe)
         eqn_no = pipe["dof"] 
@@ -275,22 +284,25 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
         c2 = R2 * sin_incline * params(ss, :gravity_bool)
 
         c = [f, c0, c1, c2]
-        u0 = [x_dof[eqn_fr], 1.0, 0]
-        prob = ODEProblem(ode_syst!, u0, (0, pipe["length"]), c)
-        sol = solve(prob, Trapezoid(), save_everystep = false);
 
-        y_to_ode, lambda_y0, lambda_f = sol[2]
+        if case == :ode
+            u0 = [x_dof[eqn_fr], 1.0, 0]
+            prob = ODEProblem(ode_syst!, u0, (0, pipe["length"]), c)
+            sol = solve(prob, Trapezoid(), save_everystep = false);
+            y_to_ode, lambda_y0, lambda_f = sol[2]
 
-        ## y^(2/3)
-        # J[eqn_no, eqn_fr] = (2/3) * (1 / cbrt(y_to_ode)) * lambda_y0 
-        # J[eqn_no, eqn_no] = (2/3) * (1 / cbrt(y_to_ode)) * lambda_f 
-        # J[eqn_no, eqn_to] = (2/3) * (1 / cbrt(x_dof[eqn_to])) * (-1) 
+            ## y
+            R_x1, R_x2 = pipe_residual_derivatives(y_to_ode, x_dof[eqn_to])
+            J[eqn_no, eqn_fr] = R_x1 * lambda_y0
+            J[eqn_no, eqn_no] = R_x1 * lambda_f
+            J[eqn_no, eqn_to] = R_x2
+        end
 
-        ## y
-        R_x1, R_x2 = pipe_residual_derivatives(y_to_ode, x_dof[eqn_to])
-        J[eqn_no, eqn_fr] = R_x1 * lambda_y0
-        J[eqn_no, eqn_no] = R_x1 * lambda_f
-        J[eqn_no, eqn_to] = R_x2
+        if case == :two_point_collocation
+            J[eqn_no, eqn_fr] = 1 + pipe["length"] * 0.5 * (dHdy(ss, x_dof[eqn_fr], c))
+            J[eqn_no, eqn_to] = -1 + pipe["length"] * 0.5 * (dHdy(ss, x_dof[eqn_to], c))
+            J[eqn_no, eqn_no] = pipe["length"] * 0.5 * ( dHdf(ss, x_dof[eqn_to], c) + dHdf(ss, x_dof[eqn_fr], c))
+        end
 
 
     end
@@ -309,8 +321,8 @@ function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::AbstractArr
         eqn_fr = ref(ss, :node, fr_node, "dof")
         
 
-        J[eqn_no, eqn_to] =   -1.0 #-ode_dof_to_pressure_derivative(x_dof[eqn_to]) #-1
-        J[eqn_no, eqn_fr] =  pressure_to_ode_dof(alpha)    #alpha  * ode_dof_to_pressure_derivative(x_dof[eqn_fr])
+        J[eqn_no, eqn_to] =   -1.0 
+        J[eqn_no, eqn_fr] =  pressure_to_dof(alpha)    
     end
 end
 

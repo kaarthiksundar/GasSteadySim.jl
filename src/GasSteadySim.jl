@@ -1,12 +1,12 @@
 module GasSteadySim
 
 import JSON
+import SciMLBase
 using Random
-using NLsolve
+using NonlinearSolve
 using SparseArrays
-using LineSearches
-using NLSolversBase
 using OrdinaryDiffEq
+using LinearAlgebra
 
 include("io/json.jl")
 include("io/data_utils.jl")
