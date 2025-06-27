@@ -12,8 +12,7 @@ function initialize_simulator(data_folder::AbstractString;
 end
 
 function initialize_simulator(data::Dict{String,Any}; 
-    eos::Symbol=:ideal,
-    potential_ratio_coefficients::Vector{Float64}=[0.0, 0.0, 1.0, 0.0])::SteadySimulator
+    eos::Symbol=:ideal)::SteadySimulator
     params, nominal_values = process_data!(data)
     make_per_unit!(data, params, nominal_values)
     bc = _build_bc(data)
@@ -27,15 +26,11 @@ function initialize_simulator(data::Dict{String,Any};
         _add_loss_resistor_info_at_nodes!,
         _add_short_pipe_info_at_nodes!,
         _add_index_info!,
-        _add_incident_dofs_info_at_nodes!,
-        _add_pressure_node_flag!
+        _add_incident_dofs_info_at_nodes!
         ]
     )
     
-    # irrespective of the use_potential_formulation variable, ideal EoS always uses potentials 
-    # (eos == :ideal) && (_update_node_flag!(ref))
-    # if eos is not ideal, then based on the flag call the node flag update function
-    # (use_potential_formulation == true) && (_update_node_flag!(ref))
+    
 
     ig = _build_ig(data) 
 
@@ -45,7 +40,6 @@ function initialize_simulator(data::Dict{String,Any};
         nominal_values,
         params,
         ig, bc,
-        potential_ratio_coefficients,
         _get_eos(eos)...
     )
     ss.params[:eos] = eos

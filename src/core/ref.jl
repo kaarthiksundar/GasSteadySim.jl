@@ -357,28 +357,6 @@ function _add_short_pipe_info_at_nodes!(ref::Dict{Symbol,Any}, data::Dict{String
     return
 end
 
-function _add_pressure_node_flag!(ref::Dict{Symbol,Any}, data::Dict{String,Any})
-    ref[:is_pressure_node] = Dict{Int64, Bool}(
-        i => true for i in keys(ref[:node])
-    )
-
-    # for (_, compressor) in get(ref, :compressor, [])
-    #     ref[:is_pressure_node][compressor["fr_node"]] = true 
-    #     ref[:is_pressure_node][compressor["to_node"]] = true
-    # end 
-
-    # for (_, control_valve) in get(ref, :control_valve, [])
-    #     ref[:is_pressure_node][control_valve["fr_node"]] = true 
-    #     ref[:is_pressure_node][control_valve["to_node"]] = true
-    # end
-end 
-
-function _update_node_flag!(ref::Dict{Symbol,Any})
-    for i in keys(ref[:is_pressure_node])
-        ref[:is_pressure_node][i] = false
-    end 
-end 
-
 
 function build_ref(data::Dict{String,Any}, bc::Dict{Symbol,Any};
     ref_extensions=[])::Dict{Symbol,Any}

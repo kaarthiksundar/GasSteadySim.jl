@@ -6,7 +6,6 @@ struct SteadySimulator
     params::Dict{Symbol,Any}
     initial_guess::Dict{Symbol,Any}
     boundary_conditions::Dict{Symbol,Any}
-    potential_ratio_coefficients::Vector{Float64}
     pu_eos_coeffs::Function
     pu_pressure_to_pu_density::Function
     pu_density_to_pu_pressure::Function
@@ -62,7 +61,7 @@ function get_density_prime(ss::SteadySimulator, pressure)
 end 
 
 function get_density_double_prime(ss::SteadySimulator, pressure) 
-    b1, b2 = get_eos_coeffs(ss)
+    _, b2 = get_eos_coeffs(ss)
     return 2 * b2
 end 
 

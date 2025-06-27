@@ -6,9 +6,9 @@ function assemble_residual!(ss::SteadySimulator, x_dof::AbstractArray, residual_
     _eval_junction_equations!(ss, x_dof, residual_dof)
     _eval_pipe_equations!(ss, x_dof, residual_dof, case)
     _eval_compressor_equations!(ss, x_dof, residual_dof)
-    # _eval_control_valve_equations!(ss, x_dof, residual_dof)
+    _eval_control_valve_equations!(ss, x_dof, residual_dof)
     # _eval_short_pipe_equations!(ss, x_dof, residual_dof)
-    # _eval_pass_through_equations!(ss, x_dof, residual_dof)
+    _eval_pass_through_equations!(ss, x_dof, residual_dof)
 end
 
 """function assembles the Jacobians"""
@@ -17,28 +17,21 @@ function assemble_mat!(ss::SteadySimulator, x_dof::AbstractArray, J::AbstractArr
     _eval_junction_equations_mat!(ss, x_dof, J)
     _eval_pipe_equations_mat!(ss, x_dof, J, case)
     _eval_compressor_equations_mat!(ss, x_dof, J)
-    # _eval_control_valve_equations_mat!(ss, x_dof, J)
+    _eval_control_valve_equations_mat!(ss, x_dof, J)
     # _eval_short_pipe_equations_mat!(ss, x_dof, J)
-    # _eval_pass_through_equations_mat!(ss, x_dof, J)
+    _eval_pass_through_equations_mat!(ss, x_dof, J)
 end
-# for 8-node
-    # using residual y_ode - y_to, p = psi(y)
-        # p = y , ODE unstable and NR plateaus
-        # p = y^2 sqrt error in NR
-        # p = y^3 ODE unstable
-        # p = sqrt(y), sqrt error in NR
-        # p = cbrt(y) ODE fine but NR iterations  oscillates between 2 values
-    # using residual (psi(y_ode)) - (psi(y_to))
-        # p = cbrt(y) ODE fine but NR iterations
-        
+
+# y = psi_inv(p)
+function pressure_to_dof(p::Real)::Real
+    return  p^3  #psi_inv(p)
+end
 
 # p = psi(y)
 function dof_to_pressure(dof_val::Real)::Real
     return  cbrt(dof_val) #psi(y)
 end
-function pressure_to_dof(p::Real)::Real
-    return  p^3  #sqrt(p)  # psi_inv(p)
-end
+
 
 function  dof_to_pressure_derivative(dof_val::Real)::Real
     return  1.0/ (3 * cbrt(dof_val^2)) # psi'(y)
@@ -156,7 +149,7 @@ function _eval_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residu
             prob = ODEProblem(ode_func, x_dof[fr_dof], (0, pipe["length"]), c)
             # Use ImplicitEuler() or Trapezoid() or TRBDF2()
             sol = solve(prob, Trapezoid(), save_everystep = false); 
-            x_dof_to_ode = sol[2]
+            x_dof_to_ode = sol.u[2]
             residual_dof[eqn_no] =  pipe_residual(x_dof_to_ode, x_dof[to_dof])  # mimic p^3 term
         end
 
@@ -180,22 +173,17 @@ function _eval_compressor_equations!(ss::SteadySimulator, x_dof::AbstractArray, 
     end
 end
 
-# """residual computation for control_valves"""
-# function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
-#     (!haskey(ref(ss), :control_valve)) && (return)
-#     @inbounds for (_, cv) in ref(ss, :control_valve)
-#         eqn_no = cv["dof"] 
-#         alpha = cv["c_ratio"]
-#         to_node = cv["to_node"]
-#         fr_node = cv["fr_node"]
-#         c_0, c_1, c_2, c_3 = ss.potential_ratio_coefficients
-#         alpha_eff = c_0 + c_1 * alpha + c_2 * alpha^2 + c_3 * alpha^3
-
-#         is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
-#         val = (is_pressure_eq) ? alpha : alpha_eff
-#         residual_dof[eqn_no] = val * x_dof[ref(ss, :node, fr_node, "dof")]  - x_dof[ref(ss, :node, to_node, "dof")]
-#     end
-# end
+"""residual computation for control_valves"""
+function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
+    (!haskey(ref(ss), :control_valve)) && (return)
+    @inbounds for (_, cv) in ref(ss, :control_valve)
+        eqn_no = cv["dof"] 
+        alpha = cv["c_ratio"]
+        to_node = cv["to_node"]
+        fr_node = cv["fr_node"]
+        residual_dof[eqn_no] = pressure_to_dof(alpha) * x_dof[ref(ss, :node, fr_node, "dof")] -  x_dof[ref(ss, :node, to_node, "dof")]
+    end
+end
 
 """residual computation for short pipes"""
 # function _eval_short_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
@@ -212,20 +200,20 @@ end
 # end
 
 """residual computation for pass through components"""
-# function _eval_pass_through_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
-#     components = [:valve, :resistor, :loss_resistor]
-#     @inbounds for component in components 
-#         (!haskey(ref(ss), component)) && (continue)
-#         for (_, comp) in ref(ss, component)
-#             eqn_no = comp["dof"]
-#             fr_node = comp["fr_node"]
-#             to_node = comp["to_node"]
-#             fr_dof = ref(ss, :node, fr_node, "dof")
-#             to_dof = ref(ss, :node, to_node, "dof")
-#             residual_dof[eqn_no] = x_dof[fr_dof] - x_dof[to_dof]
-#         end 
-#     end 
-# end 
+function _eval_pass_through_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
+    components = [:valve, :resistor, :loss_resistor]
+    @inbounds for component in components 
+        (!haskey(ref(ss), component)) && (continue)
+        for (_, comp) in ref(ss, component)
+            eqn_no = comp["dof"]
+            fr_node = comp["fr_node"]
+            to_node = comp["to_node"]
+            fr_dof = ref(ss, :node, fr_node, "dof")
+            to_dof = ref(ss, :node, to_node, "dof")
+            residual_dof[eqn_no] = x_dof[fr_dof] - x_dof[to_dof]
+        end 
+    end 
+end 
 
 """in place Jacobian computation for junctions"""
 function _eval_junction_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
@@ -289,7 +277,7 @@ function _eval_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray,
             u0 = [x_dof[eqn_fr], 1.0, 0]
             prob = ODEProblem(ode_syst!, u0, (0, pipe["length"]), c)
             sol = solve(prob, Trapezoid(), save_everystep = false);
-            y_to_ode, lambda_y0, lambda_f = sol[2]
+            y_to_ode, lambda_y0, lambda_f = sol.u[2]
 
             ## y
             R_x1, R_x2 = pipe_residual_derivatives(y_to_ode, x_dof[eqn_to])
@@ -327,25 +315,20 @@ function _eval_compressor_equations_mat!(ss::SteadySimulator, x_dof::AbstractArr
 end
 
 """in place Jacobian computation for control_valves"""
-# function _eval_control_valve_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
-#         J::AbstractArray)
-#     (!haskey(ref(ss), :control_valve)) && (return)
-#     @inbounds for (_, cv) in ref(ss, :control_valve)
-#         eqn_no = cv["dof"] 
-#         alpha = cv["c_ratio"]
-#         to_node = cv["to_node"]
-#         fr_node = cv["fr_node"]
-#         eqn_to = ref(ss, :node, to_node, "dof")
-#         eqn_fr = ref(ss, :node, fr_node, "dof")
-#         is_pressure_eq = ref(ss, :is_pressure_node, fr_node) || ref(ss, :is_pressure_node, to_node)
-
-#         c_0, c_1, c_2, c_3 = ss.potential_ratio_coefficients
-#         alpha_eff = c_0 + c_1 * alpha + c_2 * alpha^2 + c_3 * alpha^3
-        
-#         J[eqn_no, eqn_to] = -1
-#         J[eqn_no, eqn_fr] = is_pressure_eq ? alpha : alpha_eff
-#     end
-# end
+function _eval_control_valve_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
+        J::AbstractArray)
+    (!haskey(ref(ss), :control_valve)) && (return)
+    @inbounds for (_, cv) in ref(ss, :control_valve)
+        eqn_no = cv["dof"] 
+        alpha = cv["c_ratio"]
+        to_node = cv["to_node"]
+        fr_node = cv["fr_node"]
+        eqn_to = ref(ss, :node, to_node, "dof")
+        eqn_fr = ref(ss, :node, fr_node, "dof")
+        J[eqn_no, eqn_to] = -1
+        J[eqn_no, eqn_fr] = pressure_to_dof(alpha)  
+    end
+end
 
 """in place Jacobian computation for short pipes"""
 # function _eval_short_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
@@ -368,20 +351,20 @@ end
 # end
 
 """in place Jacobian computation for pass through components"""
-# function _eval_pass_through_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
-#         J::AbstractArray)
-#     components = [:valve, :resistor, :loss_resistor]
-#     @inbounds for component in components 
-#         (!haskey(ref(ss), component)) && (continue)
-#         for (_, comp) in ref(ss, component)
-#             eqn_no = comp["dof"]
-#             to_node = comp["to_node"]
-#             fr_node = comp["fr_node"]
-#             eqn_to = ref(ss, :node, to_node, "dof")
-#             eqn_fr = ref(ss, :node, fr_node, "dof")
+function _eval_pass_through_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
+        J::AbstractArray)
+    components = [:valve, :resistor, :loss_resistor]
+    @inbounds for component in components 
+        (!haskey(ref(ss), component)) && (continue)
+        for (_, comp) in ref(ss, component)
+            eqn_no = comp["dof"]
+            to_node = comp["to_node"]
+            fr_node = comp["fr_node"]
+            eqn_to = ref(ss, :node, to_node, "dof")
+            eqn_fr = ref(ss, :node, fr_node, "dof")
 
-#             J[eqn_no, eqn_to] = -1.0
-#             J[eqn_no, eqn_fr] = 1.0
-#         end 
-#     end 
-# end 
+            J[eqn_no, eqn_to] = -1.0
+            J[eqn_no, eqn_fr] = 1.0
+        end 
+    end 
+end 

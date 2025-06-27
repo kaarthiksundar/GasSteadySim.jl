@@ -9,61 +9,8 @@ function prepare_for_solve!(ss::SteadySimulator, case::Symbol)::NonlinearFunctio
     return df
 end
 
-# run function
-# function run_simulator!(
-#     ss::SteadySimulator, 
-#     df::NonlinearFunction; 
-#     x_guess::Vector=Vector{Float64}(), 
-#     method::Symbol=:trust_region,
-#     iteration_limit::Int64=2000, 
-#     show_trace_flag::Bool=false,
-#     kwargs...)::SolverReturn
 
-#     (isempty(x_guess)) && (x_guess = _create_initial_guess_dof!(ss))
-
-#     prob = NonlinearProblem(df, x_guess)
-#     fcn_method = get(solver_method, method, TrustRegion())
-
-#     time = @elapsed soln = solve(prob, fcn_method; maxiters = iteration_limit, 
-#     show_trace = Val(show_trace_flag),kwargs...)
-#     res = maximum(abs.(soln.resid))
-
-#     convergence_state = SciMLBase.successful_retcode(soln) # do this correctly
-#     println(SciMLBase.successful_retcode(soln), soln.retcode)
-    
-#     if convergence_state == false
-#         return SolverReturn(nl_solve_failure, 
-#             soln.stats, 
-#             res, 
-#             time, soln.u, 
-#             Int[], Int[])
-#     end
-
-#     sol_return = update_solution_fields_in_ref!(ss, soln.u)
-#     populate_solution!(ss)
-
-#     unphysical_solution_flag = ~isempty(sol_return[:compressors_with_neg_flow]) || ~isempty(sol_return[:nodes_with_negative_pressures])
-
-#     if unphysical_solution_flag
-
-#         return SolverReturn(unphysical_solution, 
-#                 soln.stats, 
-#                 res, 
-#                 time, soln.u, 
-#                 sol_return[:compressors_with_neg_flow], 
-#                 sol_return[:nodes_with_negative_pressures])
-        
-#     end 
-
-#     return SolverReturn(physical_solution, 
-#         soln.stats, 
-#         res, 
-#         time, soln.u, 
-#         sol_return[:compressors_with_neg_flow], 
-#         sol_return[:nodes_with_negative_pressures])
-# end
-
-# overloaded run_simulator
+# run_simulator
 function run_simulator!(ss::SteadySimulator; 
     gravity_bool::Bool=false, 
     inertial_bool::Bool=false,
@@ -93,7 +40,7 @@ function run_simulator!(ss::SteadySimulator;
     end
 
 
-    if  res < 1e-10 #SciMLBase.successful_retcode(soln) == false
+    if  res < 1e-4 || SciMLBase.successful_retcode(soln) == false
         @info "Using solution from Two-Point Collocation as initial guess..."
         x_guess = soln.u
      else
@@ -115,8 +62,8 @@ function run_simulator!(ss::SteadySimulator;
     end
 
 
-    convergence_state = SciMLBase.successful_retcode(soln) # do this correctly
-    println(SciMLBase.successful_retcode(soln), soln.retcode)
+    convergence_state = SciMLBase.successful_retcode(soln) || (res < 1e-4) # do this correctly
+    @info soln.retcode
     
     if convergence_state == false
         return SolverReturn(nl_solve_failure, 
@@ -154,7 +101,6 @@ function _create_initial_guess_dof!(ss::SteadySimulator)::Array
     ndofs = length(ref(ss, :dof))
     Random.seed!(2025)
     x_guess = rand(ndofs) 
-    # x_guess = 0.5 * ones(Float64, ndofs) 
 
     dofs_updated = 0
 

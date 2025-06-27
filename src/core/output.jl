@@ -55,7 +55,7 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::Name
                 ref(ss, sym, local_id)["withdrawal"] = calculate_slack_withdrawal(ss, local_id, x_dof)
             end 
 
-            p_val = ode_dof_to_pressure(x_dof[i]) 
+            p_val = dof_to_pressure(x_dof[i]) 
 
             if (p_val < 0)
                 push!(negative_nodal_pressures, local_id)
