@@ -8,7 +8,7 @@
     @show solver_return.iterations
     @test solver_return.status == unique_physical_solution
     @test ref(ss, :node, 1, "withdrawal") * nominal_values(ss, :mass_flow) ≈ -275.00 atol = 1e-2
-    exact_sol = GasSteadySim._parse_json("solution-files/8-node/exact_sol_ideal.json")
+    exact_sol = GasSteadySim._parse_json("./data/8-node/exact_sol_ideal.json")
     _check_correctness(ss.sol, exact_sol)
 
 
@@ -22,7 +22,7 @@ end
     @show solver_return.iterations
     @test solver_return.status == unique_physical_solution
     @test ref(ss, :node, 1, "withdrawal") * nominal_values(ss, :mass_flow) ≈ -275.00 atol = 1e-2
-    exact_sol = GasSteadySim._parse_json("solution-files/8-node/exact_sol_simple_cnga.json")
+    exact_sol = GasSteadySim._parse_json("./data/8-node/exact_sol_simple_cnga.json")
     _check_correctness(ss.sol, exact_sol)
 end
 
@@ -35,6 +35,6 @@ end
     @show solver_return.iterations
     @test solver_return.status == unique_physical_solution
     @test ref(ss, :node, 1, "withdrawal") * nominal_values(ss, :mass_flow) ≈ -275.00 atol = 1e-2
-    exact_sol = GasSteadySim._parse_json("solution-files/8-node/exact_sol_full_cnga.json")
+    exact_sol = GasSteadySim._parse_json("./data/8-node/exact_sol_full_cnga.json")
     _check_correctness(ss.sol, exact_sol)
 end

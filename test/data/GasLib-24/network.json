@@ -1,421 +1,458 @@
 {
   "nodes": {
     "24": {
-      "y_coord": 100.0,
-      "x_coord": 125.0,
+      "y_coord": 200.0,
+      "x_coord": 700.0,
       "min_pressure": 3.0e6,
       "max_pressure": 7.0e6,
-      "id": 24,
+      "node_id": 24,
       "slack_bool": 0,
-      "name": "n24"
+      "node_name": "n24"
     },
     "4": {
-      "y_coord": 300.0,
-      "x_coord": 75.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 4,
-      "slack_bool": 0,
-      "name": "n4"
-    },
-    "1": {
-      "y_coord": 300.0,
-      "x_coord": -100.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 1,
-      "slack_bool": 0,
-      "name": "n1"
-    },
-    "12": {
-      "y_coord": 300.0,
-      "x_coord": -150.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 12,
-      "slack_bool": 0,
-      "name": "n12"
-    },
-    "20": {
-      "y_coord": 400.0,
-      "x_coord": 250.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 20,
-      "slack_bool": 0,
-      "name": "n20"
-    },
-    "2": {
-      "y_coord": 300.0,
-      "x_coord": -50.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 2,
-      "slack_bool": 0,
-      "name": "n2"
-    },
-    "6": {
-      "y_coord": 400.0,
-      "x_coord": 125.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 6,
-      "slack_bool": 0,
-      "name": "n6"
-    },
-    "23": {
-      "y_coord": 200.0,
-      "x_coord": 700.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 23,
-      "slack_bool": 0,
-      "name": "n23"
-    },
-    "22": {
-      "y_coord": 400.0,
-      "x_coord": 700.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 22,
-      "slack_bool": 0,
-      "name": "n22"
-    },
-    "11": {
-      "y_coord": 400.0,
-      "x_coord": 425.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 11,
-      "slack_bool": 0,
-      "name": "n11"
-    },
-    "13": {
-      "y_coord": 200.0,
-      "x_coord": 425.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 13,
-      "slack_bool": 0,
-      "name": "n13"
-    },
-    "5": {
-      "y_coord": 300.0,
-      "x_coord": 175.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 5,
-      "slack_bool": 0,
-      "name": "n5"
-    },
-    "15": {
-      "y_coord": 300.0,
-      "x_coord": 500.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 15,
-      "slack_bool": 0,
-      "name": "n15"
-    },
-    "16": {
-      "y_coord": 300.0,
-      "x_coord": 575.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 16,
-      "slack_bool": 0,
-      "name": "n16"
-    },
-    "14": {
-      "y_coord": 100.0,
-      "x_coord": 425.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 14,
-      "slack_bool": 0,
-      "name": "n14"
-    },
-    "21": {
-      "y_coord": 100.0,
-      "x_coord": 500.0,
-      "min_pressure": 2.0e6,
-      "max_pressure": 3.5e6,
-      "id": 21,
-      "slack_bool": 0,
-      "name": "n21"
-    },
-    "7": {
-      "y_coord": 200.0,
-      "x_coord": 125.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 7,
-      "slack_bool": 0,
-      "name": "n7"
-    },
-    "8": {
-      "y_coord": 300.0,
-      "x_coord": 250.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 8,
-      "slack_bool": 0,
-      "name": "n8"
-    },
-    "17": {
-      "y_coord": 300.0,
-      "x_coord": -200.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 17,
-      "slack_bool": 1,
-      "name": "n17"
-    },
-    "19": {
-      "y_coord": 500.0,
-      "x_coord": -100.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 19,
-      "slack_bool": 0,
-      "name": "n19"
-    },
-    "10": {
-      "y_coord": 300.0,
-      "x_coord": 350.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 10,
-      "slack_bool": 0,
-      "name": "n10"
-    },
-    "18": {
-      "y_coord": 400.0,
-      "x_coord": -100.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 18,
-      "slack_bool": 0,
-      "name": "n18"
-    },
-    "9": {
-      "y_coord": 300.0,
-      "x_coord": 300.0,
-      "min_pressure": 3.0e6,
-      "max_pressure": 7.0e6,
-      "id": 9,
-      "slack_bool": 0,
-      "name": "n9"
-    },
-    "3": {
       "y_coord": 300.0,
       "x_coord": 0.0,
       "min_pressure": 3.0e6,
       "max_pressure": 7.0e6,
-      "id": 3,
+      "node_id": 4,
       "slack_bool": 0,
-      "name": "n3"
+      "node_name": "n4"
+    },
+    "1": {
+      "y_coord": 200.0,
+      "x_coord": 425.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 1,
+      "slack_bool": 0,
+      "node_name": "n1"
+    },
+    "12": {
+      "y_coord": 400.0,
+      "x_coord": 425.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 12,
+      "slack_bool": 0,
+      "node_name": "n12"
+    },
+    "20": {
+      "y_coord": 500.0,
+      "x_coord": -100.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 20,
+      "slack_bool": 0,
+      "node_name": "n20"
+    },
+    "2": {
+      "y_coord": 300.0,
+      "x_coord": -100.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 2,
+      "slack_bool": 0,
+      "node_name": "n2"
+    },
+    "6": {
+      "y_coord": 300.0,
+      "x_coord": 175.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 6,
+      "slack_bool": 0,
+      "node_name": "n6"
+    },
+    "25": {
+      "y_coord": 100.0,
+      "x_coord": 125.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 25,
+      "slack_bool": 0,
+      "node_name": "n25"
+    },
+    "23": {
+      "y_coord": 400.0,
+      "x_coord": 700.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 23,
+      "slack_bool": 0,
+      "node_name": "n23"
+    },
+    "22": {
+      "y_coord": 100.0,
+      "x_coord": 500.0,
+      "min_pressure": 2.0e6,
+      "max_pressure": 3.5e6,
+      "node_id": 22,
+      "slack_bool": 0,
+      "node_name": "n22"
+    },
+    "11": {
+      "y_coord": 300.0,
+      "x_coord": 350.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 11,
+      "slack_bool": 0,
+      "node_name": "n11"
+    },
+    "13": {
+      "y_coord": 300.0,
+      "x_coord": -150.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 13,
+      "slack_bool": 0,
+      "node_name": "n13"
+    },
+    "15": {
+      "y_coord": 100.0,
+      "x_coord": 425.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 15,
+      "slack_bool": 0,
+      "node_name": "n15"
+    },
+    "5": {
+      "y_coord": 300.0,
+      "x_coord": 75.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 5,
+      "slack_bool": 0,
+      "node_name": "n5"
+    },
+    "16": {
+      "y_coord": 300.0,
+      "x_coord": 500.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 16,
+      "slack_bool": 0,
+      "node_name": "n16"
+    },
+    "14": {
+      "y_coord": 200.0,
+      "x_coord": 425.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 14,
+      "slack_bool": 0,
+      "node_name": "n14"
+    },
+    "21": {
+      "y_coord": 400.0,
+      "x_coord": 250.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 21,
+      "slack_bool": 0,
+      "node_name": "n21"
+    },
+    "7": {
+      "y_coord": 400.0,
+      "x_coord": 125.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 7,
+      "slack_bool": 0,
+      "node_name": "n7"
+    },
+    "8": {
+      "y_coord": 200.0,
+      "x_coord": 125.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 8,
+      "slack_bool": 0,
+      "node_name": "n8"
+    },
+    "17": {
+      "y_coord": 300.0,
+      "x_coord": 575.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 17,
+      "slack_bool": 0,
+      "node_name": "n17"
+    },
+    "19": {
+      "y_coord": 400.0,
+      "x_coord": -100.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 19,
+      "slack_bool": 0,
+      "node_name": "n19"
+    },
+    "10": {
+      "y_coord": 300.0,
+      "x_coord": 300.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 10,
+      "slack_bool": 0,
+      "node_name": "n10"
+    },
+    "18": {
+      "y_coord": 300.0,
+      "x_coord": -200.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 18,
+      "slack_bool": 1,
+      "node_name": "n18"
+    },
+    "9": {
+      "y_coord": 300.0,
+      "x_coord": 250.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 9,
+      "slack_bool": 0,
+      "node_name": "n9"
+    },
+    "3": {
+      "y_coord": 300.0,
+      "x_coord": -50.0,
+      "min_pressure": 3.0e6,
+      "max_pressure": 7.0e6,
+      "node_id": 3,
+      "slack_bool": 0,
+      "node_name": "n3"
     }
   },
+  "short_pipes": {
+    "1": {
+      "short_pipe_id": 1,
+      "to_node": 2,
+      "short_pipe_name": "sp1",
+      "from_node": 19
+    }
+  },
+  "valves": {},
   "pipes": {
     "4": {
       "length": 30000.0,
       "friction_factor": 0.001546129808820412,
-      "name": "p4",
-      "id": 4,
-      "to_node": 6,
+      "pipe_name": "p4",
+      "pipe_id": 4,
+      "to_node": 7,
       "diameter": 0.9,
-      "fr_node": 4
+      "from_node": 5
     },
     "1": {
       "length": 50000.0,
       "friction_factor": 0.0014984619106991092,
-      "name": "p1",
-      "id": 1,
-      "to_node": 12,
+      "pipe_name": "p1",
+      "pipe_id": 1,
+      "to_node": 13,
       "diameter": 1.1,
-      "fr_node": 17
+      "from_node": 18
     },
     "12": {
       "length": 50000.0,
       "friction_factor": 0.0014984619106991092,
-      "name": "p12",
-      "id": 12,
-      "to_node": 24,
+      "pipe_name": "p12",
+      "pipe_id": 12,
+      "to_node": 25,
       "diameter": 1.1,
-      "fr_node": 7
+      "from_node": 8
     },
     "2": {
       "length": 10.0,
       "friction_factor": 0.001358989048455541,
-      "name": "p2",
-      "id": 2,
-      "to_node": 2,
+      "pipe_name": "p2",
+      "pipe_id": 2,
+      "to_node": 3,
       "diameter": 2.1,
-      "fr_node": 1
+      "from_node": 2
     },
     "6": {
       "length": 30000.0,
       "friction_factor": 0.001546129808820412,
-      "name": "p6",
-      "id": 6,
-      "to_node": 5,
+      "pipe_name": "p6",
+      "pipe_id": 6,
+      "to_node": 6,
       "diameter": 0.9,
-      "fr_node": 6
+      "from_node": 7
     },
     "11": {
       "length": 50000.0,
       "friction_factor": 0.0014984619106991092,
-      "name": "p11",
-      "id": 11,
-      "to_node": 18,
+      "pipe_name": "p11",
+      "pipe_id": 11,
+      "to_node": 19,
       "diameter": 1.1,
-      "fr_node": 19
+      "from_node": 20
     },
     "13": {
       "length": 100000.0,
       "friction_factor": 0.0015914389986260973,
-      "name": "p13",
-      "id": 13,
-      "to_node": 11,
+      "pipe_name": "p13",
+      "pipe_id": 13,
+      "to_node": 12,
       "diameter": 0.9,
-      "fr_node": 10
+      "from_node": 11
     },
     "5": {
       "length": 30000.0,
       "friction_factor": 0.001546129808820412,
-      "name": "p5",
-      "id": 5,
-      "to_node": 7,
+      "pipe_name": "p5",
+      "pipe_id": 5,
+      "to_node": 8,
       "diameter": 0.9,
-      "fr_node": 4
+      "from_node": 5
     },
     "15": {
       "length": 100000.0,
       "friction_factor": 0.001606054170716793,
-      "name": "p15",
-      "id": 15,
-      "to_node": 13,
+      "pipe_name": "p15",
+      "pipe_id": 15,
+      "to_node": 14,
       "diameter": 0.85,
-      "fr_node": 10
+      "from_node": 11
     },
     "16": {
       "length": 50000.0,
       "friction_factor": 0.001606054170716793,
-      "name": "p16",
-      "id": 16,
-      "to_node": 15,
+      "pipe_name": "p16",
+      "pipe_id": 16,
+      "to_node": 16,
       "diameter": 0.85,
-      "fr_node": 13
+      "from_node": 14
     },
     "14": {
       "length": 50000.0,
       "friction_factor": 0.0015914389986260973,
-      "name": "p14",
-      "id": 14,
-      "to_node": 15,
+      "pipe_name": "p14",
+      "pipe_id": 14,
+      "to_node": 16,
       "diameter": 0.9,
-      "fr_node": 11
+      "from_node": 12
     },
     "7": {
       "length": 30000.0,
       "friction_factor": 0.001546129808820412,
-      "name": "p7",
-      "id": 7,
-      "to_node": 5,
+      "pipe_name": "p7",
+      "pipe_id": 7,
+      "to_node": 6,
       "diameter": 0.9,
-      "fr_node": 7
+      "from_node": 8
     },
     "8": {
       "length": 30000.0,
       "friction_factor": 0.001546129808820412,
-      "name": "p8",
-      "id": 8,
-      "to_node": 8,
+      "pipe_name": "p8",
+      "pipe_id": 8,
+      "to_node": 9,
       "diameter": 0.9,
-      "fr_node": 5
+      "from_node": 6
     },
     "17": {
       "length": 30000.0,
       "friction_factor": 0.0016996272090766518,
-      "name": "p17",
-      "id": 17,
-      "to_node": 21,
+      "pipe_name": "p17",
+      "pipe_id": 17,
+      "to_node": 22,
       "diameter": 0.5,
-      "fr_node": 14
+      "from_node": 15
     },
     "10": {
       "length": 30000.0,
       "friction_factor": 0.001546129808820412,
-      "name": "p10",
-      "id": 10,
-      "to_node": 9,
+      "pipe_name": "p10",
+      "pipe_id": 10,
+      "to_node": 10,
       "diameter": 0.9,
-      "fr_node": 8
+      "from_node": 9
     },
     "19": {
       "length": 50000.0,
       "friction_factor": 0.0014984619106991092,
-      "name": "p19",
-      "id": 19,
-      "to_node": 23,
+      "pipe_name": "p19",
+      "pipe_id": 19,
+      "to_node": 24,
       "diameter": 1.1,
-      "fr_node": 16
+      "from_node": 17
     },
     "9": {
       "length": 30000.0,
       "friction_factor": 0.001546129808820412,
-      "name": "p9",
-      "id": 9,
-      "to_node": 20,
+      "pipe_name": "p9",
+      "pipe_id": 9,
+      "to_node": 21,
       "diameter": 0.9,
-      "fr_node": 8
+      "from_node": 9
     },
     "18": {
       "length": 50000.0,
       "friction_factor": 0.0014984619106991092,
-      "name": "p18",
-      "id": 18,
-      "to_node": 22,
+      "pipe_name": "p18",
+      "pipe_id": 18,
+      "to_node": 23,
       "diameter": 1.1,
-      "fr_node": 16
+      "from_node": 17
     },
     "3": {
       "length": 30000.0,
       "friction_factor": 0.001546129808820412,
-      "name": "p3",
-      "id": 3,
-      "to_node": 4,
+      "pipe_name": "p3",
+      "pipe_id": 3,
+      "to_node": 5,
       "diameter": 0.9,
-      "fr_node": 3
+      "from_node": 4
     }
   },
+  "resistors": {
+    "1": {
+      "resistor_name": "r1",
+      "drag": 5.40999984741211,
+      "to_node": 2,
+      "resistor_id": 1,
+      "diameter": 0.9,
+      "from_node": 13
+    }
+  },
+  "loss_resistors": {},
   "compressors": {
     "1": {
-      "id": 1,
-      "to_node": 3,
-      "name": "c1",
-      "fr_node": 2
+      "comp_id": 1,
+      "to_node": 4,
+      "comp_name": "c1",
+      "from_node": 3
     },
     "2": {
-      "id": 2,
-      "to_node": 10,
-      "name": "c2",
-      "fr_node": 9
+      "comp_id": 2,
+      "to_node": 11,
+      "comp_name": "c2",
+      "from_node": 10
     },
     "3": {
-      "id": 3,
-      "to_node": 16,
-      "name": "c3",
-      "fr_node": 15
+      "comp_id": 3,
+      "to_node": 17,
+      "comp_name": "c3",
+      "from_node": 16
     }
   },
   "control_valves": {
     "1": {
-      "to_node": 14,
-      "cv_id": 1,
-      "cv_name": "cv1",
-      "fr_node": 13
+      "control_valve_name": "cv1",
+      "to_node": 1,
+      "bypass_required": 1,
+      "control_valve_id": 1,
+      "from_node": 14
+    },
+    "2": {
+      "control_valve_name": "cv2",
+      "to_node": 15,
+      "bypass_required": 1,
+      "control_valve_id": 2,
+      "from_node": 1
     }
   }
 }

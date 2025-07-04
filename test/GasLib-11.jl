@@ -7,7 +7,7 @@
     @test solver_return.status == unique_physical_solution
 end
 
-@testset "test validity of compessor approximation in non ideal case" begin 
+@testset "test validity of compressor approximation in non ideal case" begin 
     file = "./data/GasLib-11/"
     eos = :simple_cnga
 
