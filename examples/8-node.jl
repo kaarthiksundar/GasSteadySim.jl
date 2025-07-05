@@ -1,4 +1,4 @@
-using GasSteadySim
+using GasSteadyODE
 using JSON
 file = "./data/8-node/"
 eos_var = :ideal

@@ -1,4 +1,4 @@
-using GasSteadySim
+using GasSteadyODE
 using JSON
 
 file = "./data/GasLib-40-multiple-slacks/"

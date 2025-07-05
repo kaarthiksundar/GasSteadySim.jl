@@ -1,4 +1,4 @@
-module GasSteadySim
+module GasSteadyODE
 
 import JSON
 import SciMLBase

@@ -2490,9 +2490,9 @@
   "compressors": {
     "24": {
       "id": 24,
-      "to_node": 23,
+      "to_node": 88,
       "name": "c24",
-      "fr_node": 88
+      "fr_node": 23
     },
     "4": {
       "id": 4,
@@ -2526,9 +2526,9 @@
     },
     "2": {
       "id": 2,
-      "to_node": 28,
+      "to_node": 135,
       "name": "c2",
-      "fr_node": 135
+      "fr_node": 28
     },
     "6": {
       "id": 6,
@@ -2544,9 +2544,9 @@
     },
     "23": {
       "id": 23,
-      "to_node": 12,
+      "to_node": 88,
       "name": "c23",
-      "fr_node": 88
+      "fr_node": 12
     },
     "22": {
       "id": 22,
@@ -2658,10 +2658,9 @@
     },
     "3": {
       "id": 3,
-      "to_node": 29,
+      "to_node": 135,
       "name": "c3",
-      "fr_node": 135
+      "fr_node": 29
     }
-  },
-  "control_valves": {}
+  }
 }

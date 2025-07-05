@@ -186,18 +186,18 @@ function _eval_control_valve_equations!(ss::SteadySimulator, x_dof::AbstractArra
 end
 
 """residual computation for short pipes"""
-# function _eval_short_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
-#     @inbounds for (_, pipe) in get(ref(ss), :short_pipe, [])
-#         eqn_no = pipe["dof"]
-#         f = x_dof[eqn_no]
-#         fr_node = pipe["fr_node"]  
-#         to_node = pipe["to_node"]
-#         fr_dof = ref(ss, :node, fr_node, "dof")
-#         to_dof = ref(ss, :node, to_node, "dof")
-#         resistance = 1e-5
-#         residual_dof[eqn_no] = x_dof[fr_dof]^2/2  - x_dof[to_dof]^2/2 - f * abs(f) * resistance
-#     end
-# end
+function _eval_short_pipe_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
+    @inbounds for (_, pipe) in get(ref(ss), :short_pipe, [])
+        eqn_no = pipe["dof"]
+        f = x_dof[eqn_no]
+        fr_node = pipe["fr_node"]  
+        to_node = pipe["to_node"]
+        fr_dof = ref(ss, :node, fr_node, "dof")
+        to_dof = ref(ss, :node, to_node, "dof")
+        resistance = 1e-5
+        residual_dof[eqn_no] = (cbrt(x_dof[fr_dof]))^2  - (cbrt(x_dof[to_dof]))^2 - f * abs(f) * resistance
+    end
+end
 
 """residual computation for pass through components"""
 function _eval_pass_through_equations!(ss::SteadySimulator, x_dof::AbstractArray, residual_dof::AbstractArray)
@@ -331,24 +331,24 @@ function _eval_control_valve_equations_mat!(ss::SteadySimulator, x_dof::Abstract
 end
 
 """in place Jacobian computation for short pipes"""
-# function _eval_short_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
-#         J::AbstractArray)
-#     @inbounds for (_, pipe) in get(ref(ss), :short_pipe, [])
-#         eqn_no = pipe["dof"] 
-#         f = x_dof[eqn_no]
-#         fr_node = pipe["fr_node"]  
-#         to_node = pipe["to_node"]
+function _eval_short_pipe_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 
+        J::AbstractArray)
+    @inbounds for (_, pipe) in get(ref(ss), :short_pipe, [])
+        eqn_no = pipe["dof"] 
+        f = x_dof[eqn_no]
+        fr_node = pipe["fr_node"]  
+        to_node = pipe["to_node"]
 
-#         eqn_fr = ref(ss, :node, fr_node, "dof")
-#         eqn_to = ref(ss, :node, to_node, "dof")
+        eqn_fr = ref(ss, :node, fr_node, "dof")
+        eqn_to = ref(ss, :node, to_node, "dof")
         
-#         resistance = 1e-5
+        resistance = 1e-5
 
-#         J[eqn_no, eqn_fr] = x_dof[eqn_fr]
-#         J[eqn_no, eqn_to] = -x_dof[eqn_to]
-#         J[eqn_no, eqn_no] = -2.0 * f * sign(f) * resistance
-#     end
-# end
+        J[eqn_no, eqn_fr] = 2.0 / ( 3.0 * cbrt(x_dof[eqn_fr]) )
+        J[eqn_no, eqn_to] = -2.0 / ( 3.0 * cbrt(x_dof[eqn_to]) )
+        J[eqn_no, eqn_no] = -2.0 * f * sign(f) * resistance
+    end
+end
 
 """in place Jacobian computation for pass through components"""
 function _eval_pass_through_equations_mat!(ss::SteadySimulator, x_dof::AbstractArray, 

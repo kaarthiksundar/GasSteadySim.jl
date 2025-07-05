@@ -1,4 +1,4 @@
-name = "GasSteadySim"
+name = "GasSteadyODE"
 uuid = "db0cc656-5a73-4e01-a562-b737392720f7"
 authors = ["Shriram Srinivasan and Kaarthik Sundar"]
 version = "0.1.0"

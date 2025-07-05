@@ -1,5 +1,5 @@
 
-using GasSteadySim
+using GasSteadyODE
 using JSON
 
 """ 
@@ -17,9 +17,9 @@ function consolidate_all_non_pipe_edges_as_compressors(folder::AbstractString)
     new_bc_filename =  folder * "bc_new.json"
     new_params_filename = folder * "params_new.json"
 
-    params = GasSteadySim._parse_json(params_file)
-    bc = GasSteadySim._parse_json(bc_file)
-    network  = GasSteadySim._parse_json(network_file)
+    params = GasSteadyODE._parse_json(params_file)
+    bc = GasSteadyODE._parse_json(bc_file)
+    network  = GasSteadyODE._parse_json(network_file)
     num_compressors = length(network["compressors"])
     
     bc_new = Dict{String, Any}(

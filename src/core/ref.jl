@@ -134,6 +134,11 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         ref[name][id]["flow"] = NaN
     end 
 
+    if haskey(data, "short_pipes")
+        @warn("In networks with ODE formulation for pipes, not clear what equation for short_pipe should be, and the residual does not decrease. \n In this case, it is also not clear what the exact solution is.")
+    end
+
+
     for (i, pipe) in get(data, "short_pipes", [])
         name = :short_pipe
         (!haskey(ref, name)) && (ref[name] = Dict())
@@ -147,7 +152,7 @@ function _add_components_to_ref!(ref::Dict{Symbol,Any}, data::Dict{String,Any}, 
         end
         ref[name][id]["to_node"] = pipe["to_node"]
         ref[name][id]["flow"] = NaN
-    end 
+    end
 
     ref[:total_control_vars] = num_control_vars 
     return
