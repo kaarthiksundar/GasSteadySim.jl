@@ -96,9 +96,15 @@ function _create_initial_guess_dof!(ss::SteadySimulator)::Array
 
     for component in components 
         for (i, val) in get(ss.initial_guess, component, [])
+            if val == nothing
+                continue
+            end
             x_guess[ref(ss, component, i, "dof")] = val 
             dofs_updated += 1
         end 
+    end
+    if 0 < dofs_updated < ndofs
+        @warn "Null values found in ig file replaced by 0.5"
     end 
     return x_guess
 end

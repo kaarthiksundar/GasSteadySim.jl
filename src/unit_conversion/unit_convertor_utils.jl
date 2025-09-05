@@ -161,7 +161,9 @@ function _rescale_data!(data::Dict{String,Any},
         for (param, f) in node_units
             (!haskey(node, param)) && (continue)
             value = node[param]
-            node[param] = f(value)
+            if value != nothing 
+                node[param] = f(value)
+            end
         end 
     end 
 
@@ -200,7 +202,9 @@ function _rescale_data!(data::Dict{String,Any},
     )
     for (param, f) in initial_units
         for (i, value) in get(data, param, [])
-            data[param][i] = f(value)
+            if value != nothing
+                data[param][i] = f(value)
+            end
         end 
     end 
 
