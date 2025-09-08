@@ -4,7 +4,6 @@ import JSON
 using Graphs
 using NonlinearSolve
 using SparseArrays
-using LineSearches
 using SciMLBase
 
 include("io/json.jl")
