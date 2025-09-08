@@ -85,7 +85,7 @@ end
 
 struct SolverReturn 
     status::SOLVER_STATUS
-    iterations::Int 
+    stats::SciMLBase.NLStats
     residual_norm::Float64 
     time::Float64 
     solution::Vector{Float64}
@@ -93,3 +93,11 @@ struct SolverReturn
     negative_potentials_in_nodes::Vector{Int64}
     pressure_domain_not_satisfied_in_nodes::Vector{Int64}
 end 
+
+solver_method = Dict{Symbol, Any}(
+    :newton => NewtonRaphson(), 
+    :trust_region => TrustRegion(), 
+    :lm => LevenbergMarquardt(), 
+    :robust_newton => RobustMultiNewton(), 
+    :fast => FastShortcutNonlinearPolyalg()
+)
