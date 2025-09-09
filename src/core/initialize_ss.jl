@@ -50,7 +50,37 @@ function initialize_simulator(data::Dict{String,Any};
         _get_eos(eos)...
     )
 
+    # check if network is connected
+    num_connected_components = check_network_connectivity(ss)
+    @assert (num_connected_components == 1)  "Disconnected network ! $num_connected_components connected components found!"
+
     # _add_flow_bounds_to_ref!(ss)
 
     return ss
+end
+
+function check_network_connectivity(ss::SteadySimulator)::Int8
+    V = ref(ss, :node) |> collect 
+    new_node_from_old = Dict(V[i][1] => i for i in range(1, length(V)))
+    old_node_from_new =[V[i][1] for i in range(1, length(V)) ]
+    edge_component_universe = Vector{Symbol}([:pipe, :compressor, :control_valve, :valve, :short_pipe, :resistor, :loss_resistor])
+    E = []
+    for comp in edge_component_universe
+        append!(E, get(ref(ss), comp, []))
+    end
+    g = SimpleGraph(length(V)) 
+
+    for (i, edge) in E 
+        fr = edge["fr_node"]
+        to = edge["to_node"]
+        if has_edge(g, new_node_from_old[fr], new_node_from_old[to])
+            @warn "MORE THAN ONE EDGE BETWEEN NODES $(fr) AND $(to)"
+            continue
+        end
+        add_edge!(g, new_node_from_old[fr], new_node_from_old[to])
+    end 
+
+    C_list = connected_components(g)
+    
+    return length(C_list)
 end
