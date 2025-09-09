@@ -36,10 +36,10 @@ function run_simulator!(
     sol_return = update_solution_fields_in_ref!(ss, soln.zero)
     populate_solution!(ss)
 
-    unphysical_solution = ~isempty(sol_return[:compressors_with_neg_flow]) || 
+    is_solution_unphysical = ~isempty(sol_return[:compressors_with_neg_flow]) || 
     ~isempty(sol_return[:nodes_with_neg_potential])
 
-    if unphysical_solution
+    if is_solution_unphysical
         is_unique = isempty(sol_return[:nodes_with_pressure_not_in_domain])
         if is_unique 
             return SolverReturn(unique_unphysical_solution, 
@@ -76,8 +76,6 @@ function run_simulator!(ss::SteadySimulator;
     show_trace_flag::Bool=false,
     kwargs...)::SolverReturn
 
-    
-    
     x_guess = _create_initial_guess_dof!(ss)
     df = prepare_for_solve!(ss)
     return run_simulator!(ss, df, 
