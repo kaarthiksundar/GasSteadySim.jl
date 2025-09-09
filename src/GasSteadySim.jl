@@ -1,6 +1,7 @@
 module GasSteadySim
 
 import JSON
+using Graphs
 using NLsolve
 using SparseArrays
 using LineSearches
