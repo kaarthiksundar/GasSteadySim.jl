@@ -29,6 +29,13 @@ function bisect(ss::SteadySimulator, lb::Float64, ub::Float64, val::Float64)::Fl
 end
 
 invert_positive_potential(ss::SteadySimulator, val::Float64) = bisect(ss, 0.0, find_ub(ss, val, 1.0), val)
+invert_negative_potential(ss::SteadySimulator, val::Float64) = bisect(ss, find_lb(ss, val, -1.0), 0.0, val)
+
+function invert_potential(ss::SteadySimulator, val::Float64)::Float64
+    pressure = (val >= 0) ? invert_positive_potential(ss, val) : invert_negative_potential(ss, val)
+    return pressure
+end
+
 
 function calculate_slack_withdrawal(ss::SteadySimulator, id::Int, x_dof::Array)::Float64
     slack_withdrawal = 0.0
@@ -56,34 +63,25 @@ function update_solution_fields_in_ref!(ss::SteadySimulator, x_dof::Array)::Name
                 ref(ss, sym, local_id)["withdrawal"] = calculate_slack_withdrawal(ss, local_id, x_dof)
             end 
 
-            pi_val = (ref(ss, :is_pressure_node, local_id)) ? get_potential(ss, x_dof[i]) : x_dof[i] 
-            if (pi_val < 0)
-                push!(negative_nodal_potentials, local_id)
-                ref(ss, sym, local_id)["potential"] = pi_val 
-                ref(ss, sym, local_id)["pressure"] = NaN 
-                ref(ss, sym, local_id)["density"] = NaN
-                continue 
+            if (ref(ss, :is_pressure_node, local_id))
+                p_val = x_dof[i]
+                pi_val = get_potential(ss, p_val)
+            else
+                pi_val = x_dof[i]
+                p_val = (pi_val < 0 && ss.params[:eos] == :ideal) ? NaN : invert_potential(ss, pi_val)
             end
 
-            if (pi_val == 0.0)
-                ref(ss, sym, local_id)["potential"] = 0.0
-                ref(ss, sym, local_id)["pressure"] = 0.0
-                ref(ss, sym, local_id)["density"] = 0.0
-                continue
-            end 
+            ref(ss, sym, local_id)["potential"] = pi_val 
+            ref(ss, sym, local_id)["pressure"] = p_val
+            ref(ss, sym, local_id)["density"] = (pi_val < 0 && ss.params[:eos] == :ideal) ? NaN : get_density(ss, p_val)
 
-            p_val = (ref(ss, :is_pressure_node, local_id)) ? x_dof[i] : invert_positive_potential(ss, x_dof[i])
+            if (pi_val < 0)
+                push!(negative_nodal_potentials, local_id)
+            end
 
             # pi_val > 0 is always true when we get to this point 
-            if (p_val < 0 && pi_val > 0)
+            if (pi_val > 0 && p_val < 0)
                 push!(nodal_pressures_not_in_domain, local_id)
-                ref(ss, sym, local_id)["potential"] = pi_val 
-                ref(ss, sym, local_id)["pressure"] = NaN 
-                ref(ss, sym, local_id)["density"] = NaN
-            else  
-                ref(ss, sym, local_id)["potential"] = pi_val
-                ref(ss, sym, local_id)["pressure"] = p_val
-                ref(ss, sym, local_id)["density"] = get_density(ss, p_val)
             end
         end
 

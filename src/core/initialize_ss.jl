@@ -49,6 +49,7 @@ function initialize_simulator(data::Dict{String,Any};
         potential_ratio_coefficients,
         _get_eos(eos)...
     )
+    ss.params[:eos] = eos
 
     # check if network is connected
     num_connected_components = check_network_connectivity(ss)

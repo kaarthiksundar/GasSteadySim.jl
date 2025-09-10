@@ -2,7 +2,7 @@ function _parse_data(data_folder::AbstractString;
     case_name::AbstractString="", 
     case_types::Vector{Symbol}=Symbol[], 
     initial_guess_filename::AbstractString="")
-    network_file = data_folder * "network.json"
+    network_file = data_folder * "network"
     params_file = data_folder * "params"
     bc_file = data_folder * "bc"
     ig_file = data_folder * initial_guess_filename
@@ -10,7 +10,12 @@ function _parse_data(data_folder::AbstractString;
         params_file = params_file * "_" * case_name * ".json"
     else 
         params_file = params_file * ".json"
-    end 
+    end
+    if (:network in case_types)
+        network_file = network_file * "_" * case_name * ".json"
+    else 
+        network_file = network_file * ".json"
+    end  
     
     if (:bc in case_types)
         bc_file = bc_file * "_" * case_name * ".json"
