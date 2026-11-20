@@ -8,6 +8,6 @@ end
 
 ""
 function _parse_json(io::IO)
-    data = JSON.parse(io, dicttype=Dict)
+    data = JSON.parse(io, dicttype=Dict{String, Any})
     return data
 end
